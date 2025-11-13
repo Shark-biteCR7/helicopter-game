@@ -177,63 +177,125 @@ export default class PlayScene extends Phaser.Scene {
   }
 
   /**
-   * 根据关卡和当前进度动态计算缝隙参数
+   * 根据关卡和当前进度动态计算缝隙参数（基于连续轨迹）
    * @param {Object} level - 当前关卡配置
-   * @param {number} distanceRatio - 当前进度比例 (0~1)，0 表示起点，1 表示终点
-   * @returns {{ gapHeight: number, gapCenterY: number }}
+   * @param {number} progress - 当前进度比例 (0~1)，0 表示起点，1 表示终点
+   * @returns {{ gapHeight: number, gapCenterY: number, densityMultiplier: number }}
    */
-  getGapConfigForCurrentLevel(level, distanceRatio) {
+  getGapConfigForCurrentLevel(level, progress) {
     const levelId = level.levelId || 1;
     const gapHeightMin = level.gapHeight?.min || 200;
     const gapHeightMax = level.gapHeight?.max || 280;
-    const gapCenterYMin = level.gapCenterY?.min || 400;
-    const gapCenterYMax = level.gapCenterY?.max || 880;
     
-    // 难度递增策略：
-    // 1. 前 20% 区域：相对简单（gapHeight 偏向最大值，gapCenterY 波动小）
-    // 2. 中间 60% 区域：正常难度
-    // 3. 后 20% 区域：最难（gapHeight 偏向最小值，gapCenterY 波动大）
+    // 使用 COURSE 定义的可飞行区域
+    const usableMin = COURSE.centerYMin || 300;
+    const usableMax = COURSE.centerYMax || 960;
     
-    let gapHeightBias = 0.5; // 0 表示最小值，1 表示最大值
-    let gapCenterYVariance = 1.0; // 波动系数
-    
-    if (distanceRatio < 0.2) {
-      // 前 20%：简单区域
-      gapHeightBias = 0.7 + Math.random() * 0.3; // 偏向大缝隙
-      gapCenterYVariance = 0.6; // 波动小
-    } else if (distanceRatio > 0.8) {
-      // 后 20%：困难区域
-      gapHeightBias = 0.0 + Math.random() * 0.3; // 偏向小缝隙
-      gapCenterYVariance = 1.2; // 波动大
+    // === 1. 计算 gapHeight（越到后期越窄） ===
+    let gapHeightBias;
+    if (progress < 0.2) {
+      // 前 20%：简单，偏向大缝隙
+      gapHeightBias = 0.7 + Math.random() * 0.3;
+    } else if (progress > 0.8) {
+      // 后 20%：困难，偏向小缝隙
+      gapHeightBias = 0.0 + Math.random() * 0.3;
     } else {
-      // 中间 60%：正常区域
+      // 中间 60%：正常
       gapHeightBias = 0.3 + Math.random() * 0.5;
-      gapCenterYVariance = 1.0;
+    }
+    const gapHeight = Math.floor(gapHeightMin + (gapHeightMax - gapHeightMin) * gapHeightBias);
+    
+    // === 2. 生成连续轨迹的 normalizedY ∈ [0, 1] ===
+    let normalizedY = 0.5; // 默认中间
+    
+    // 根据关卡选择不同的轨迹模式
+    switch (levelId) {
+      case 1: {
+        // 关卡1：温和正弦波，频率低，振幅小
+        const frequency = 1.5; // 低频率
+        const amplitude = 0.15; // 小振幅（0.35~0.65）
+        normalizedY = 0.5 + amplitude * Math.sin(2 * Math.PI * frequency * progress);
+        break;
+      }
+      
+      case 2: {
+        // 关卡2：正弦波 + 小随机，频率略高
+        const frequency = 2.0;
+        const amplitude = 0.2; // 0.3~0.7
+        const randomOffset = (Math.random() - 0.5) * 0.1; // 添加小随机
+        normalizedY = 0.5 + amplitude * Math.sin(2 * Math.PI * frequency * progress) + randomOffset;
+        break;
+      }
+      
+      case 3: {
+        // 关卡3：正弦 + 锯齿混合，高低交替
+        const sineFreq = 2.5;
+        const sineAmp = 0.25;
+        const sawtoothFreq = 1.0;
+        const sawtoothAmp = 0.15;
+        // 锯齿波：上升-下降循环
+        const sawtoothPhase = (progress * sawtoothFreq) % 1;
+        const sawtoothValue = sawtoothPhase < 0.5 ? sawtoothPhase * 2 : 2 - sawtoothPhase * 2;
+        normalizedY = 0.5 
+          + sineAmp * Math.sin(2 * Math.PI * sineFreq * progress)
+          + sawtoothAmp * (sawtoothValue - 0.5);
+        break;
+      }
+      
+      case 4: {
+        // 关卡4：随机阶梯 + 正弦，突然跳跃
+        const stepCount = 8; // 分成8段
+        const stepIndex = Math.floor(progress * stepCount);
+        // 用步骤索引作为随机种子（保持同一段内一致）
+        const stepSeed = (stepIndex * 137) % 100; // 伪随机
+        const stepValue = (stepSeed / 100) * 0.6 + 0.2; // 0.2~0.8
+        const sineFreq = 3.0;
+        const sineAmp = 0.15;
+        normalizedY = stepValue + sineAmp * Math.sin(2 * Math.PI * sineFreq * progress);
+        break;
+      }
+      
+      case 5: {
+        // 关卡5：高频正弦 + 大振幅 + 随机跳跃，地狱难度
+        const freq1 = 3.5;
+        const freq2 = 1.2; // 双频叠加
+        const amp1 = 0.25;
+        const amp2 = 0.15;
+        const randomJump = (Math.random() - 0.5) * 0.2; // 大随机跳跃
+        normalizedY = 0.5 
+          + amp1 * Math.sin(2 * Math.PI * freq1 * progress)
+          + amp2 * Math.sin(2 * Math.PI * freq2 * progress)
+          + randomJump;
+        break;
+      }
+      
+      default:
+        normalizedY = 0.5;
     }
     
-    // 计算实际 gapHeight（带难度偏向）
-    const gapHeight = Math.floor(
-      gapHeightMin + (gapHeightMax - gapHeightMin) * gapHeightBias
+    // === 3. 将 normalizedY 映射到实际高度，并 Clamp 到安全范围 ===
+    normalizedY = Phaser.Math.Clamp(normalizedY, 0.0, 1.0);
+    const gapCenterY = Math.floor(Phaser.Math.Linear(usableMin, usableMax, normalizedY));
+    
+    // 添加小随机偏移（不超过 gapHeight 的 10%），保持轨迹连续但不僵硬
+    const microOffset = (Math.random() - 0.5) * gapHeight * 0.1;
+    const finalGapCenterY = Phaser.Math.Clamp(
+      gapCenterY + microOffset,
+      usableMin + gapHeight / 2,
+      usableMax - gapHeight / 2
     );
     
-    // 计算实际 gapCenterY（带波动系数）
-    const gapCenterYRange = (gapCenterYMax - gapCenterYMin) * gapCenterYVariance;
-    const gapCenterYMid = (gapCenterYMax + gapCenterYMin) / 2;
-    const gapCenterY = Math.floor(
-      gapCenterYMid - gapCenterYRange / 2 + Math.random() * gapCenterYRange
-    );
-    
-    // 根据关卡 levelId 调整密度系数（后面的关更密集）
-    const densityMultiplier = 1.0 - (levelId - 1) * 0.05; // 关卡 1: 1.0, 关卡 5: 0.8
+    // === 4. 密度系数（关卡越高越密集） ===
+    const densityMultiplier = 1.0 - (levelId - 1) * 0.05; // 1.0 → 0.8
     
     return {
-      gapHeight: Math.max(150, gapHeight), // 最小不低于 150
-      gapCenterY: Phaser.Math.Clamp(gapCenterY, gapCenterYMin, gapCenterYMax),
+      gapHeight: Math.max(150, gapHeight),
+      gapCenterY: Math.floor(finalGapCenterY),
       densityMultiplier
     };
   }
 
-  // 动态生成单个障碍物（钟乳石洞穴风格）
+  // 动态生成单个障碍物（基于连续轨迹的钟乳石风格）
   spawnNextObstacle() {
     if (!this.levelContext || !this.levelContext.level) {
       console.error('❌ spawnNextObstacle: levelContext 未初始化！');
@@ -249,10 +311,10 @@ export default class PlayScene extends Phaser.Scene {
     }
     
     // 计算当前进度比例 (0~1)
-    const distanceRatio = this.nextObstacleX / this.goalPosition;
+    const progress = this.nextObstacleX / this.goalPosition;
     
-    // 使用动态难度配置
-    const gapConfig = this.getGapConfigForCurrentLevel(level, distanceRatio);
+    // 使用连续轨迹生成缝隙配置
+    const gapConfig = this.getGapConfigForCurrentLevel(level, progress);
     const gapHeight = gapConfig.gapHeight;
     const gapCenterY = gapConfig.gapCenterY;
     const densityMultiplier = gapConfig.densityMultiplier;
