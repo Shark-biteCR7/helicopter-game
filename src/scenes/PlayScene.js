@@ -296,29 +296,23 @@ export default class PlayScene extends Phaser.Scene {
   }
 
   /**
-   * 创建"山字形"下方障碍物的三段碰撞体（横向紧贴排列）
+   * 创建"山字形"下方障碍物的三段碰撞体（横向紧贴排列，随机高度）
    * @param {number} xCenter - 障碍物中心 X 坐标
    * @param {number} gapBottomY - 缝隙底部 Y 坐标
    * @param {number} totalHeight - 从地面到缝隙底部的总高度
    * @returns {Array} 返回三个碰撞体组成的数组 [左段, 中段, 右段]
    * 
-   * 山字形高度比例：1:4:2（低-高-中等），横向紧贴排列
-   * 例如：totalHeight = 700px
-   *   - unitHeight = 700 / 7 = 100px
-   *   - 左段：1 * 100 = 100px（低）
-   *   - 中段：4 * 100 = 400px（高，山峰）
-   *   - 右段：2 * 100 = 200px（中等）
-   * 三段底部对齐在 DESIGN.height（地面），横向紧贴无间隙
+   * 三段高度随机（不对称），所有段顶部对齐到缝隙底部，横向紧贴排列
    */
   createMountainBottomColliders(xCenter, gapBottomY, totalHeight) {
     const segmentWidth = 60; // 每段的宽度
-    const unitHeight = totalHeight / 7; // 基础单位高度
     
-    // 三段高度：1:4:2 比例
+    // ✅ 随机生成三段高度（不对称，避免上下镜像）
+    // 每段高度在 totalHeight 的 20%~90% 之间随机
     const heights = [
-      1 * unitHeight, // 左段：低
-      4 * unitHeight, // 中段：高（山峰）
-      2 * unitHeight  // 右段：中等
+      Phaser.Math.FloatBetween(0.2, 0.9) * totalHeight,  // 左段随机
+      Phaser.Math.FloatBetween(0.2, 0.9) * totalHeight,  // 中段随机
+      Phaser.Math.FloatBetween(0.2, 0.9) * totalHeight   // 右段随机
     ];
     
     // 三段水平位置（左、中、右，紧贴排列）
@@ -329,18 +323,18 @@ export default class PlayScene extends Phaser.Scene {
     ];
     
     const colliders = [];
-    const groundY = DESIGN.height; // 地面 Y 坐标
     
     for (let i = 0; i < 3; i++) {
       const height = heights[i];
       const x = xPositions[i];
       
-      // ✅ 关键修改：所有段底部对齐在地面，Y 坐标 = groundY - height/2
-      const y = groundY - height / 2;
+      // ✅ 关键：所有段顶部对齐到缝隙底部 gapBottomY
+      // Y 坐标 = gapBottomY + height/2（向下延伸）
+      const y = gapBottomY + height / 2;
       
-      // 创建碰撞体（使用透明 hitbox 或 tree-bottom 贴图）
+      // 创建碰撞体
       const collider = this.physics.add.sprite(x, y, 'tree-bottom');
-      collider.setOrigin(0.5, 0.5); // 锚点在中心，便于计算
+      collider.setOrigin(0.5, 0.5); // 锚点在中心
       collider.displayWidth = segmentWidth;
       collider.displayHeight = height;
       
@@ -366,24 +360,23 @@ export default class PlayScene extends Phaser.Scene {
   }
 
   /**
-   * 创建"山字形"上方障碍物的三段碰撞体（横向紧贴排列）
+   * 创建"山字形"上方障碍物的三段碰撞体（横向紧贴排列，随机高度）
    * @param {number} xCenter - 障碍物中心 X 坐标
    * @param {number} gapTopY - 缝隙顶部 Y 坐标
    * @param {number} totalHeight - 从屏幕顶部到缝隙顶部的总高度
    * @returns {Array} 返回三个碰撞体组成的数组 [左段, 中段, 右段]
    * 
-   * 山字形高度比例：1:4:2（低-高-中等），横向紧贴排列
-   * 从上往下悬挂，三段顶部对齐在屏幕顶部，底部形成"山"字形轮廓
+   * 三段高度随机（不对称），所有段底部对齐到缝隙顶部，横向紧贴排列
    */
   createMountainTopColliders(xCenter, gapTopY, totalHeight) {
     const segmentWidth = 60; // 每段的宽度
-    const unitHeight = totalHeight / 7; // 基础单位高度
     
-    // 三段高度：1:4:2 比例
+    // ✅ 随机生成三段高度（不对称，避免上下镜像）
+    // 每段高度在 totalHeight 的 20%~90% 之间随机
     const heights = [
-      1 * unitHeight, // 左段：低
-      4 * unitHeight, // 中段：高（山峰）
-      2 * unitHeight  // 右段：中等
+      Phaser.Math.FloatBetween(0.2, 0.9) * totalHeight,  // 左段随机
+      Phaser.Math.FloatBetween(0.2, 0.9) * totalHeight,  // 中段随机
+      Phaser.Math.FloatBetween(0.2, 0.9) * totalHeight   // 右段随机
     ];
     
     // 三段水平位置（左、中、右，紧贴排列）
@@ -394,18 +387,18 @@ export default class PlayScene extends Phaser.Scene {
     ];
     
     const colliders = [];
-    const topY = 0; // 屏幕顶部 Y 坐标
     
     for (let i = 0; i < 3; i++) {
       const height = heights[i];
       const x = xPositions[i];
       
-      // ✅ 关键修改：所有段顶部对齐在屏幕顶部，Y 坐标 = topY + height/2
-      const y = topY + height / 2;
+      // ✅ 关键：所有段底部对齐到缝隙顶部 gapTopY
+      // Y 坐标 = gapTopY - height/2（向上延伸）
+      const y = gapTopY - height / 2;
       
-      // 创建碰撞体（使用透明 hitbox 或 tree-top 贴图）
+      // 创建碰撞体
       const collider = this.physics.add.sprite(x, y, 'tree-top');
-      collider.setOrigin(0.5, 0.5); // 锚点在中心，便于计算
+      collider.setOrigin(0.5, 0.5); // 锚点在中心
       collider.displayWidth = segmentWidth;
       collider.displayHeight = height;
       
