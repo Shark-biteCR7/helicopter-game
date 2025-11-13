@@ -340,11 +340,13 @@ export default class PlayScene extends Phaser.Scene {
       collider.setOrigin(0.5, 0); // 锚点在顶部
       collider.displayWidth = segmentWidth;
       collider.displayHeight = height;
+      
+      // ✅ 完全贴合：碰撞盒大小与显示尺寸一致
       collider.body.setSize(segmentWidth, height);
-      collider.body.setOffset(
-        (collider.width - segmentWidth) / 2,
-        0
-      );
+      // ✅ 完全贴合：由于锚点在顶部(0.5, 0)，offset 设为 0 即可
+      // Phaser 会自动让 body 与 sprite 对齐
+      collider.body.setOffset(0, 0);
+      
       collider.body.setAllowGravity(false);
       collider.body.setImmovable(true);
       
@@ -403,11 +405,13 @@ export default class PlayScene extends Phaser.Scene {
       collider.setOrigin(0.5, 1); // 锚点在底部（从上往下悬挂）
       collider.displayWidth = segmentWidth;
       collider.displayHeight = height;
+      
+      // ✅ 完全贴合：碰撞盒大小与显示尺寸一致
       collider.body.setSize(segmentWidth, height);
-      collider.body.setOffset(
-        (collider.width - segmentWidth) / 2,
-        collider.height - height
-      );
+      // ✅ 完全贴合：由于锚点在底部(0.5, 1)，offset 设为 0 即可
+      // Phaser 会自动让 body 与 sprite 对齐
+      collider.body.setOffset(0, 0);
+      
       collider.body.setAllowGravity(false);
       collider.body.setImmovable(true);
       
