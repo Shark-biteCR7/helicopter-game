@@ -53,7 +53,7 @@ export default class PlayScene extends Phaser.Scene {
 
     // 终点线
     this.finishLine = null;
-    this.activeSensors = [];
+    // 移除 activeSensors，不再使用传感器
 
     this.best = parseInt(localStorage.getItem(SCORE.lsKey) || '0', 10);
     this.score = 0;
@@ -350,26 +350,11 @@ export default class PlayScene extends Phaser.Scene {
     bottom.setScale(bottomScaleX, 1.0);
     bottom.setRotation(bottomRotation);
     
-    // === 创建得分传感器（穿过缝隙时触发） ===
-    const sensor = this.physics.add.sprite(screenX + 50, gapCenterY, null);
-    sensor.setSize(20, gapHeight);
-    sensor.setAlpha(0); // 不可见
-    sensor.body.setAllowGravity(false);
-    sensor.setData('scored', false);
-    sensor.setData('worldX', this.nextObstacleX + 50);
-    this.activeSensors.push(sensor);
-    
-    // 传感器碰撞检测：通过缝隙时加分
-    this.physics.add.overlap(this.heli, sensor, () => {
-      if (!sensor.getData('scored')) {
-        sensor.setData('scored', true);
-        this.addScore(10, 'pass');
-        this.audio.playScore();
-      }
-    });
+    // === 移除传感器得分逻辑，改为基于飞行距离得分 ===
+    // 原有的 sensor 已删除，不再通过穿过缝隙加分
     
     // 记录障碍物组（便于后续清理）
-    this.activeObstacles.push({ top, bottom, sensor, x: this.nextObstacleX });
+    this.activeObstacles.push({ top, bottom, x: this.nextObstacleX });
     
     // 更新下一个障碍物位置（应用难度密度系数）
     this.lastObstacleX = this.nextObstacleX;
@@ -639,16 +624,9 @@ export default class PlayScene extends Phaser.Scene {
     const top = this.acquireObstacle('tree-top', baseX, topY, true);
     const bottom = this.acquireObstacle('tree-bottom', baseX, bottomY, false);
 
-    const sensorHeight = Math.max(60, this.gap - 20);
-    const sensor = this.add.zone(baseX, centerY, 28, sensorHeight);
-    this.physics.world.enable(sensor);
-    sensor.body.setAllowGravity(false);
-    sensor.body.moves = true;
-    sensor.setData('sensor', true);
-    this.activeSensors.push(sensor);
-    this.physics.add.overlap(this.heli, sensor, this.handleSensorOverlap, null, this);
+    // 移除传感器创建逻辑（不再使用穿过缝隙得分）
 
-    return { top, bottom, sensor };
+    return { top, bottom };
   }
 
   acquireObstacle(key, x, y, isTop) {
@@ -676,20 +654,13 @@ export default class PlayScene extends Phaser.Scene {
     return ob;
   }
 
-  handleSensorOverlap = (heli, sensor) => {
-    if (!sensor.getData('counted')) {
-      sensor.setData('counted', true);
-      this.addScore(1, 'sensor');
-    }
-  };
+  // 移除 handleSensorOverlap 方法，不再使用传感器得分
 
   addScore(value, source = 'distance') {
     if (value <= 0) return;
     this.score += value;
     this.scoreText.setText(String(this.score));
-    if (source === 'sensor') {
-      this.audio.playScore();
-    }
+    // 移除 sensor 相关的音效逻辑
   }
 
   onHit = (heli, collider) => {
@@ -961,7 +932,7 @@ export default class PlayScene extends Phaser.Scene {
       if (screenX < -500) {
         group.top.destroy();
         group.bottom.destroy();
-        group.sensor.destroy();
+        // 移除 sensor.destroy()（已不再使用传感器）
         this.activeObstacles.splice(i, 1);
       }
   }
@@ -988,27 +959,7 @@ export default class PlayScene extends Phaser.Scene {
       }
     });
 
-    // 更新传感器位置
-    for (let i = this.activeSensors.length - 1; i >= 0; i -= 1) {
-      const sensor = this.activeSensors[i];
-      
-      // 根据worldX计算屏幕位置
-      const sensorWorldX = sensor.getData('worldX');
-      if (sensorWorldX !== undefined) {
-        sensor.x = sensorWorldX - this.worldX;
-      }
-      
-      // 只更新屏幕内的传感器
-      if (sensor.x > -200 && sensor.x < DESIGN.width + 200) {
-        if (sensor.body) sensor.body.updateFromGameObject();
-      }
-      
-      // 离开屏幕很远后销毁
-      if (sensor.x < -500) {
-        sensor.destroy();
-        this.activeSensors.splice(i, 1);
-      }
-    }
+    // 移除传感器更新逻辑（已不再使用传感器）
 
     // 更新终点线位置（基于worldX）
     this.finishLine.x = this.goalPosition - this.worldX;
@@ -1062,8 +1013,7 @@ export default class PlayScene extends Phaser.Scene {
     this.input.off('pointerup', this.handlePointerUp);
     this.input.keyboard.off('keydown', this.keyDownHandler, this);
     this.input.keyboard.off('keyup', this.keyUpHandler, this);
-    this.activeSensors.forEach(sensor => sensor.destroy());
-    this.activeSensors.length = 0;
+    // 移除 activeSensors 清理逻辑（已不再使用传感器）
     if (this.weatherParticles) {
       this.weatherParticles.destroy();
       this.weatherParticles = null;
