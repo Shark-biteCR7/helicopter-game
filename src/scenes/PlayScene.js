@@ -167,29 +167,17 @@ export default class PlayScene extends Phaser.Scene {
     this.obstacles = this.physics.add.group({ allowGravity: false, immovable: true });
     this.physics.add.overlap(this.heli, this.obstacles, this.onHit, null, this);
     
-    // 动态生成相关变量
-    this.nextObstacleX = 1000; // 下一个障碍物的X位置
-    this.lastObstacleX = 0; // 上一个障碍物的X位置
-    this.activeObstacles = []; // 当前活跃的障碍物组
+    // 动态生成相关变量 - 暂时禁用
+    // this.nextObstacleX = 1000;
+    // this.lastObstacleX = 0;
+    // this.activeObstacles = [];
   }
 
   spawnLevelObstacles() {
-    // 不再预生成所有障碍物，改为在update中动态生成
-    // 初始生成屏幕内的前几个障碍物
-    if (!this.levelContext || !this.levelContext.level) {
-      console.error('❌ levelContext 未初始化！');
-      return;
-    }
+    // 障碍物生成已禁用 - 准备重新设计
+    console.log('⚠️ 障碍物生成已禁用');
     
-    const density = this.levelContext.level.obstacleDensity || 800;
-    // 只生成屏幕内+右侧一点点的障碍物（约3个）
-    const spawnCount = Math.min(3, Math.ceil((DESIGN.width + 800) / density));
-    
-    for (let i = 0; i < spawnCount; i++) {
-      this.spawnNextObstacle();
-    }
-    
-    // 生成终点线
+    // 只生成终点线
     this.createFinishLineAtGoal();
   }
 
@@ -793,17 +781,18 @@ export default class PlayScene extends Phaser.Scene {
     const speed = this.scrollSpeed;
     this.worldX += speed * dt;
     
+    // 障碍物生成和更新逻辑已禁用
+    /*
     // 动态生成障碍物：当屏幕右侧距离下一个障碍物位置足够近时生成
-    const spawnThreshold = this.worldX + DESIGN.width + 500; // 在屏幕右侧500px处生成
+    const spawnThreshold = this.worldX + DESIGN.width + 500;
     let spawnCount = 0;
-    const maxSpawnPerFrame = 5; // 每帧最多生成5个，防止卡死
+    const maxSpawnPerFrame = 5;
     
     while (this.nextObstacleX < spawnThreshold && this.nextObstacleX < this.goalPosition && spawnCount < maxSpawnPerFrame) {
       const beforeX = this.nextObstacleX;
       this.spawnNextObstacle();
       spawnCount++;
       
-      // 防御：如果nextObstacleX没有增加，强制跳出
       if (this.nextObstacleX <= beforeX) {
         console.error(`⚠️ nextObstacleX 未更新！beforeX=${beforeX}, afterX=${this.nextObstacleX}`);
         break;
@@ -815,7 +804,6 @@ export default class PlayScene extends Phaser.Scene {
       const group = this.activeObstacles[i];
       const screenX = group.x - this.worldX;
       
-      // 障碍物离开屏幕左侧很远，销毁
       if (screenX < -500) {
         group.top.destroy();
         group.bottom.destroy();
@@ -823,6 +811,7 @@ export default class PlayScene extends Phaser.Scene {
         this.activeObstacles.splice(i, 1);
       }
     }
+    */
     
     // 更新所有障碍物位置（基于worldX计算屏幕位置）
     this.obstacles.children.iterate(obstacle => {

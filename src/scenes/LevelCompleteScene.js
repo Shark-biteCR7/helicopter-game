@@ -178,8 +178,9 @@ export default class LevelCompleteScene extends Phaser.Scene {
   }
 
   goToNextLevel() {
-    this.scene.stop('Play');
+    console.log('🎯 点击下一关');
     this.scene.stop('LevelComplete');
+    this.scene.stop('Play');
     this.scene.start('Play', {
       chapterId: this.chapterId,
       levelIndex: this.levelIndex + 1
@@ -187,8 +188,9 @@ export default class LevelCompleteScene extends Phaser.Scene {
   }
 
   retryLevel() {
-    this.scene.stop('Play');
+    console.log('🔄 点击重玩');
     this.scene.stop('LevelComplete');
+    this.scene.stop('Play');
     this.scene.start('Play', {
       chapterId: this.chapterId,
       levelIndex: this.levelIndex
@@ -196,8 +198,9 @@ export default class LevelCompleteScene extends Phaser.Scene {
   }
 
   goToMenu() {
-    this.scene.stop('Play');
+    console.log('🏠 点击返回菜单');
     this.scene.stop('LevelComplete');
+    this.scene.stop('Play');
     this.scene.start('LevelScene', { chapterId: this.chapterId });
   }
 }
