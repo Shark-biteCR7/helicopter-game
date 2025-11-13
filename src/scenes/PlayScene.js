@@ -581,8 +581,8 @@ export default class PlayScene extends Phaser.Scene {
     
     // 如果是地面碰撞，重置直升机位置避免卡住
     if (colliderType === 'ground') {
-      heli.setVelocityY(-200); // 给一个向上的速度
-      heli.y = DESIGN.height - 180; // 重置到安全位置
+      heli.setVelocityY(-300); // 给一个较大的向上速度
+      heli.y = DESIGN.height - 200; // 重置到更高的安全位置
     }
     
     // 减少一条命
@@ -595,6 +595,7 @@ export default class PlayScene extends Phaser.Scene {
       // 生命值归零，游戏结束
       this.isDead = true;
       this.hold = false;
+      heli.setVelocity(0, 0); // 停止移动
       this.time.delayedCall(600, () => {
         this.scene.launch('UI', {
           mode: 'result',
@@ -608,8 +609,12 @@ export default class PlayScene extends Phaser.Scene {
         this.scene.pause();
       });
     } else {
-      // 还有生命值，触发无敌时间
+      // 还有生命值，触发无敌时间并继续游戏
       this.triggerInvincible();
+      // 确保游戏继续运行
+      if (!this.isRunning) {
+        this.isRunning = true;
+      }
     }
   };
 
