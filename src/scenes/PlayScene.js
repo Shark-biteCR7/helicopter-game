@@ -1,4 +1,4 @@
-import { DESIGN, PHYS, SCORE, CHAPTERS, COURSE, WEATHER } from '../constants.js';
+import { DESIGN, PHYS, SCORE, CHAPTERS, COURSE, WEATHER, ASSETS } from '../constants.js';
 import AudioSystem from '../systems/AudioSystem.js';
 
 const resolveLevel = (request = {}) => {
@@ -100,47 +100,28 @@ export default class PlayScene extends Phaser.Scene {
   createFinishLine() {
     // 终点线容器（初始在屏幕右侧外很远）
     this.finishLine = this.add.container(DESIGN.width + 5000, 0);
-    
-    // 绘制竖条纹终点线
+    // 竖条纹
     const lineGraphics = this.add.graphics();
     const stripeWidth = 30;
     const stripeCount = Math.ceil(DESIGN.height / stripeWidth);
-    
     for (let i = 0; i < stripeCount; i++) {
       const color = i % 2 === 0 ? 0xffff00 : 0x000000; // 黄黑相间
       lineGraphics.fillStyle(color, 1);
       lineGraphics.fillRect(0, i * stripeWidth, 40, stripeWidth);
     }
-    
     this.finishLine.add(lineGraphics);
-    
-    // 添加"终点"文字
-    const finishText = this.add.text(20, DESIGN.height / 2 - 100, '🏁', {
-      fontSize: 80
-    }).setOrigin(0.5);
+    // 文本
+    const finishText = this.add.text(20, DESIGN.height / 2 - 100, '🏁', { fontSize: 80 }).setOrigin(0.5);
     this.finishLine.add(finishText);
-    
     const finishTextZh = this.add.text(20, DESIGN.height / 2, '终点', {
-      fontFamily: 'Inter, Arial',
-      fontSize: 48,
-      fontStyle: '700',
-      color: '#ff0000',
-      stroke: '#ffffff',
-      strokeThickness: 4
+      fontFamily: 'Inter, Arial', fontSize: 48, fontStyle: '700', color: '#ff0000', stroke: '#ffffff', strokeThickness: 4
     }).setOrigin(0.5);
     this.finishLine.add(finishTextZh);
-    
     const finishTextEn = this.add.text(20, DESIGN.height / 2 + 60, 'FINISH', {
-      fontFamily: 'Inter, Arial',
-      fontSize: 32,
-      fontStyle: '700',
-      color: '#ff0000',
-      stroke: '#ffffff',
-      strokeThickness: 3
+      fontFamily: 'Inter, Arial', fontSize: 32, fontStyle: '700', color: '#ff0000', stroke: '#ffffff', strokeThickness: 3
     }).setOrigin(0.5);
     this.finishLine.add(finishTextEn);
-    
-    // 设置终点线的初始位置（基于目标距离）
+    // 初始距离
     this.finishLineDistance = 0;
   }
 
@@ -158,7 +139,8 @@ export default class PlayScene extends Phaser.Scene {
   createHelicopter() {
     this.heli = this.physics.add.image(180, this.centerY, 'heli');
     this.heli.setCircle(26, 24, 14);
-    this.heli.setCollideWorldBounds(true);
+    // 改为手动边界控制，避免 Arcade 世界边界内部强制归零造成卡底
+    this.heli.setCollideWorldBounds(false);
     this.heli.body.setAllowGravity(false);
     // 移除地面碰撞检测，让触底和触顶一样（只物理阻挡，不扣血）
     // this.groundCollider = this.physics.add.overlap(this.heli, this.ground, this.onHit, null, this);
@@ -167,18 +149,13 @@ export default class PlayScene extends Phaser.Scene {
   createObstaclePool() {
     this.obstacles = this.physics.add.group({ allowGravity: false, immovable: true });
     this.physics.add.overlap(this.heli, this.obstacles, this.onHit, null, this);
-    
-    // 动态生成相关变量 - 暂时禁用
-    // this.nextObstacleX = 1000;
-    // this.lastObstacleX = 0;
-    // this.activeObstacles = [];
+    // 动态生成相关变量（重新启用）
+    this.nextObstacleX = 1000;
+    this.lastObstacleX = 0;
+    this.activeObstacles = [];
   }
 
   spawnLevelObstacles() {
-    // 障碍物生成已禁用 - 准备重新设计
-    console.log('⚠️ 障碍物生成已禁用');
-    
-    // 只生成终点线
     this.createFinishLineAtGoal();
   }
 
@@ -213,22 +190,27 @@ export default class PlayScene extends Phaser.Scene {
     // 计算屏幕位置（世界坐标 - worldX）
     const screenX = this.nextObstacleX - this.worldX;
     
-    // 创建上方障碍
-    const top = this.obstacles.create(screenX, topHeight / 2, 'tree-top');
-    top.setOrigin(0.5, 1);
-    top.setData('type', 'obstacle');
-    top.setData('worldX', this.nextObstacleX); // 保存世界坐标
-    top.body.setSize(top.width * 0.5, topHeight * 0.85); // 缩小碰撞体积
-    top.body.setOffset(top.width * 0.25, topHeight * 0.15); // 向中心偏移
+  // 创建上方障碍（Kenney tile 更方，扩大宽度，保持安全间隙）
+  const top = this.obstacles.create(screenX, topHeight / 2, 'tree-top');
+  top.setOrigin(0.5, 1);
+  top.setData('type', 'obstacle');
+  top.setData('worldX', this.nextObstacleX);
+  // 计算碰撞体：高度按真实可覆盖高度限制，宽度 70%
+  const topBodyW = top.width * 0.7;
+  const topBodyH = Math.max(40, topHeight * 0.9);
+  top.body.setSize(topBodyW, topBodyH);
+  top.body.setOffset((top.width - topBodyW) / 2, Math.max(0, top.height - topBodyH));
     
-    // 创建下方障碍
-    const bottom = this.obstacles.create(screenX, bottomY + (DESIGN.height - bottomY) / 2, 'tree-bottom');
-    bottom.setOrigin(0.5, 0);
-    bottom.setData('type', 'obstacle');
-    bottom.setData('worldX', this.nextObstacleX); // 保存世界坐标
-    const bottomHeight = DESIGN.height - bottomY;
-    bottom.body.setSize(bottom.width * 0.5, bottomHeight * 0.85); // 缩小碰撞体积
-    bottom.body.setOffset(bottom.width * 0.25, bottomHeight * 0.15); // 向中心偏移
+  // 创建下方障碍
+  const bottom = this.obstacles.create(screenX, bottomY + (DESIGN.height - bottomY) / 2, 'tree-bottom');
+  bottom.setOrigin(0.5, 0);
+  bottom.setData('type', 'obstacle');
+  bottom.setData('worldX', this.nextObstacleX);
+  const bottomHeight = DESIGN.height - bottomY;
+  const bottomBodyW = bottom.width * 0.7;
+  const bottomBodyH = Math.max(40, bottomHeight * 0.9);
+  bottom.body.setSize(bottomBodyW, bottomBodyH);
+  bottom.body.setOffset((bottom.width - bottomBodyW) / 2, 0);
     
     // 创建得分传感器
     const sensor = this.physics.add.sprite(screenX + 50, gapCenterY, null);
@@ -772,7 +754,40 @@ export default class PlayScene extends Phaser.Scene {
 
     const acceleration = this.hold ? -PHYS.thrust : PHYS.gravity;
     this.vy = Phaser.Math.Clamp(this.vy + acceleration * dt, -PHYS.vyMaxUp, PHYS.vyMaxDown);
-    this.heli.y = Phaser.Math.Clamp(this.heli.y + this.vy * dt, 60, DESIGN.height - 80);
+
+    const topLimit = 60;
+    const bottomLimit = DESIGN.height - 80;
+    const proposedY = this.heli.y + this.vy * dt;
+    let clampedY = proposedY;
+    let hitTopBound = false;
+    let hitBottomBound = false;
+
+    if (proposedY < topLimit) {
+      clampedY = topLimit;
+      hitTopBound = true;
+    } else if (proposedY > bottomLimit) {
+      clampedY = bottomLimit;
+      hitBottomBound = true;
+    }
+
+    this.heli.y = clampedY;
+
+    if (hitTopBound && this.vy < 0) {
+      // 顶部轻微弹回
+      this.vy = Math.min(200, Math.abs(this.vy) * 0.25);
+    } else if (hitBottomBound && this.vy > 0) {
+      // 底部弹回并稍微抬起避免再次被Clamp
+      this.heli.y = bottomLimit - 2; // 往上抬 2px
+      this.vy = -Math.min(500, Math.abs(this.vy) * 0.45) || -220;
+    }
+
+    // 调试日志（可按需删除）
+    if (hitBottomBound) {
+      if (!this._lastBottomLog || this.time.now - this._lastBottomLog > 300) {
+        console.log('[底部碰撞] y=', this.heli.y, 'vy=', this.vy, 'hold=', this.hold);
+        this._lastBottomLog = this.time.now;
+      }
+    }
 
     const normalized = Phaser.Math.Clamp((this.vy + PHYS.vyMaxUp) / (PHYS.vyMaxUp + PHYS.vyMaxDown), 0, 1);
     const tilt = Phaser.Math.Linear(-22, 16, normalized);
@@ -782,8 +797,7 @@ export default class PlayScene extends Phaser.Scene {
     const speed = this.scrollSpeed;
     this.worldX += speed * dt;
     
-    // 障碍物生成和更新逻辑已禁用
-    /*
+    // 动态生成障碍物：当屏幕右侧距离下一个障碍物位置足够近时生成
     // 动态生成障碍物：当屏幕右侧距离下一个障碍物位置足够近时生成
     const spawnThreshold = this.worldX + DESIGN.width + 500;
     let spawnCount = 0;
@@ -811,8 +825,7 @@ export default class PlayScene extends Phaser.Scene {
         group.sensor.destroy();
         this.activeObstacles.splice(i, 1);
       }
-    }
-    */
+  }
     
     // 更新所有障碍物位置（基于worldX计算屏幕位置）
     this.obstacles.children.iterate(obstacle => {
@@ -880,10 +893,6 @@ export default class PlayScene extends Phaser.Scene {
     // 降低UI更新频率（每0.1秒更新一次）
     if (Math.floor(this.elapsed * 10) % 1 === 0) {
       this.bestZh.setText(`最高 ${this.best}`);
-    }
-
-    if (this.heli.y >= DESIGN.height - 80) {
-      this.onHit();
     }
 
     this.updateClouds(dt);
