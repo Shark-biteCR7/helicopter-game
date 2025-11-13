@@ -106,30 +106,8 @@ export const CHAPTERS = [
   }
 ];
 
-// 外部素材加载开关与配置（Kenney等）
+// 素材配置：使用程序化生成 + 自定义直升机图片
 export const ASSETS = {
-  useKenney: true, // 设置为 true 启用外部素材；false 则使用程序化生成
-  backgrounds: [
-    // 仅使用一张整幅背景贴图（用户提供）
-    'tilemap-backgrounds.png'
-  ],
-  tiles: [
-    'tile_0000.png',
-    'tile_0001.png',
-    'tile_0002.png',
-    'tile_0003.png'
-  ],
-  // 如果想用 Tiles/Backgrounds 目录里多个碎图拼成背景，开启下面两个开关并列出文件
-  backgroundFromTiles: true,
-  backgroundTileDir: 'assets/kenney_pixel/tiles/Backgrounds', // 目标拷贝目录（需你把对应图片复制进去）
-  backgroundTileFiles: [
-    // 自动平铺使用的全部碎图（当前目录已存在 0~23 共24张）
-    'tile_0000.png','tile_0001.png','tile_0002.png','tile_0003.png',
-    'tile_0004.png','tile_0005.png','tile_0006.png','tile_0007.png',
-    'tile_0008.png','tile_0009.png','tile_0010.png','tile_0011.png',
-    'tile_0012.png','tile_0013.png','tile_0014.png','tile_0015.png',
-    'tile_0016.png','tile_0017.png','tile_0018.png','tile_0019.png',
-    'tile_0020.png','tile_0021.png','tile_0022.png','tile_0023.png'
-  ]
-  // 预留：后续可加入 topTiles / bottomTiles 指定障碍物贴图
+  useExternalAssets: false, // 禁用外部素材，使用程序化生成
+  helicopter: 'helicol.png'  // 自定义直升机图片
 };
