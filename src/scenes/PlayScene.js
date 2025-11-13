@@ -160,7 +160,8 @@ export default class PlayScene extends Phaser.Scene {
     this.heli.setCircle(26, 24, 14);
     this.heli.setCollideWorldBounds(true);
     this.heli.body.setAllowGravity(false);
-    this.groundCollider = this.physics.add.overlap(this.heli, this.ground, this.onHit, null, this);
+    // 移除地面碰撞检测，让触底和触顶一样（只物理阻挡，不扣血）
+    // this.groundCollider = this.physics.add.overlap(this.heli, this.ground, this.onHit, null, this);
   }
 
   createObstaclePool() {
@@ -573,9 +574,9 @@ export default class PlayScene extends Phaser.Scene {
   onHit = (heli, collider) => {
     if (this.isDead || this.isInvincible) return;
     
-    // 检查碰撞对象类型，只有障碍物和地面才扣血
+    // 只处理障碍物碰撞，地面和顶部通过worldBounds物理阻挡
     const colliderType = collider.getData('type');
-    if (colliderType !== 'obstacle' && colliderType !== 'ground') {
+    if (colliderType !== 'obstacle') {
       return;
     }
     
@@ -587,11 +588,6 @@ export default class PlayScene extends Phaser.Scene {
     
     // 触发无敌时间（闪烁）
     this.triggerInvincible();
-    
-    // 如果是地面碰撞，给个向上的反弹力
-    if (colliderType === 'ground') {
-      heli.setVelocityY(-250);
-    }
     
     if (this.lives <= 0) {
       // 生命值归零，游戏结束
