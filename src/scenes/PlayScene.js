@@ -295,6 +295,136 @@ export default class PlayScene extends Phaser.Scene {
     };
   }
 
+  /**
+   * 创建"山字形"下方障碍物的三段碰撞体
+   * @param {number} xCenter - 障碍物中心 X 坐标
+   * @param {number} gapBottomY - 缝隙底部 Y 坐标
+   * @param {number} totalHeight - 从地面到缝隙底部的总高度
+   * @returns {Array} 返回三个碰撞体组成的数组 [左段, 中段, 右段]
+   * 
+   * 山字形高度比例：1:4:2（低-高-中等）
+   * 例如：totalHeight = 700px
+   *   - unitHeight = 700 / 7 = 100px
+   *   - 左段：1 * 100 = 100px（低）
+   *   - 中段：4 * 100 = 400px（高，山峰）
+   *   - 右段：2 * 100 = 200px（中等）
+   */
+  createMountainBottomColliders(xCenter, gapBottomY, totalHeight) {
+    const segmentWidth = 60; // 每段的宽度
+    const unitHeight = totalHeight / 7; // 基础单位高度
+    
+    // 三段高度：1:4:2 比例
+    const heights = [
+      1 * unitHeight, // 左段：低
+      4 * unitHeight, // 中段：高（山峰）
+      2 * unitHeight  // 右段：中等
+    ];
+    
+    // 三段水平位置（左、中、右）
+    const xPositions = [
+      xCenter - segmentWidth,  // 左段
+      xCenter,                 // 中段
+      xCenter + segmentWidth   // 右段
+    ];
+    
+    const colliders = [];
+    
+    for (let i = 0; i < 3; i++) {
+      const height = heights[i];
+      const x = xPositions[i];
+      // Y 坐标：从缝隙底部向下，障碍物中心在 gapBottomY + height/2
+      const y = gapBottomY + height / 2;
+      
+      // 创建碰撞体（使用透明 hitbox 或 tree-bottom 贴图）
+      const collider = this.physics.add.sprite(x, y, 'tree-bottom');
+      collider.setOrigin(0.5, 0); // 锚点在顶部
+      collider.displayWidth = segmentWidth;
+      collider.displayHeight = height;
+      collider.body.setSize(segmentWidth, height);
+      collider.body.setOffset(
+        (collider.width - segmentWidth) / 2,
+        0
+      );
+      collider.body.setAllowGravity(false);
+      collider.body.setImmovable(true);
+      
+      // 标记为障碍物
+      collider.setData('type', 'obstacle');
+      collider.setData('worldX', xCenter); // 记录世界坐标（用于滚动）
+      collider.setData('segmentIndex', i); // 标记是第几段
+      collider.setData('isTopObstacle', false); // 标记是下方障碍
+      
+      // 添加到障碍物组
+      this.obstacles.add(collider);
+      colliders.push(collider);
+    }
+    
+    return colliders;
+  }
+
+  /**
+   * 创建"山字形"上方障碍物的三段碰撞体
+   * @param {number} xCenter - 障碍物中心 X 坐标
+   * @param {number} gapTopY - 缝隙顶部 Y 坐标
+   * @param {number} totalHeight - 从屏幕顶部到缝隙顶部的总高度
+   * @returns {Array} 返回三个碰撞体组成的数组 [左段, 中段, 右段]
+   * 
+   * 山字形高度比例：1:4:2（低-高-中等）
+   * 从上往下悬挂，视觉上也是"山"字形轮廓
+   */
+  createMountainTopColliders(xCenter, gapTopY, totalHeight) {
+    const segmentWidth = 60; // 每段的宽度
+    const unitHeight = totalHeight / 7; // 基础单位高度
+    
+    // 三段高度：1:4:2 比例
+    const heights = [
+      1 * unitHeight, // 左段：低
+      4 * unitHeight, // 中段：高（山峰）
+      2 * unitHeight  // 右段：中等
+    ];
+    
+    // 三段水平位置（左、中、右）
+    const xPositions = [
+      xCenter - segmentWidth,  // 左段
+      xCenter,                 // 中段
+      xCenter + segmentWidth   // 右段
+    ];
+    
+    const colliders = [];
+    
+    for (let i = 0; i < 3; i++) {
+      const height = heights[i];
+      const x = xPositions[i];
+      // Y 坐标：从缝隙顶部向上，障碍物中心在 gapTopY - height/2
+      const y = gapTopY - height / 2;
+      
+      // 创建碰撞体（使用透明 hitbox 或 tree-top 贴图）
+      const collider = this.physics.add.sprite(x, y, 'tree-top');
+      collider.setOrigin(0.5, 1); // 锚点在底部（从上往下悬挂）
+      collider.displayWidth = segmentWidth;
+      collider.displayHeight = height;
+      collider.body.setSize(segmentWidth, height);
+      collider.body.setOffset(
+        (collider.width - segmentWidth) / 2,
+        collider.height - height
+      );
+      collider.body.setAllowGravity(false);
+      collider.body.setImmovable(true);
+      
+      // 标记为障碍物
+      collider.setData('type', 'obstacle');
+      collider.setData('worldX', xCenter); // 记录世界坐标（用于滚动）
+      collider.setData('segmentIndex', i); // 标记是第几段
+      collider.setData('isTopObstacle', true); // 标记是上方障碍
+      
+      // 添加到障碍物组
+      this.obstacles.add(collider);
+      colliders.push(collider);
+    }
+    
+    return colliders;
+  }
+
   // 动态生成单个障碍物（基于连续轨迹的钟乳石风格）
   spawnNextObstacle() {
     if (!this.levelContext || !this.levelContext.level) {
@@ -319,42 +449,39 @@ export default class PlayScene extends Phaser.Scene {
     const gapCenterY = gapConfig.gapCenterY;
     const densityMultiplier = gapConfig.densityMultiplier;
     
-    // 计算上下障碍物位置
-    const topY = gapCenterY - gapHeight / 2;
-    const bottomY = gapCenterY + gapHeight / 2;
+    // 计算缝隙的顶部和底部 Y 坐标
+    const gapTopY = gapCenterY - gapHeight / 2;
+    const gapBottomY = gapCenterY + gapHeight / 2;
     
     // 计算屏幕位置（世界坐标 - worldX）
     const screenX = this.nextObstacleX - this.worldX;
     
-    // 获取本关的钟乳石贴图 key（预留扩展点）
-    const spriteKeys = this.getObstacleSpriteKeysForLevel(level);
+    // === 山字形三段障碍物系统 ===
     
-    // ✅ 使用已调好的 acquireObstacle() 来生成障碍和碰撞盒
-    const top = this.acquireObstacle(spriteKeys.top, screenX, topY, true);
-    const bottom = this.acquireObstacle(spriteKeys.bottom, screenX, bottomY, false);
+    // 1. 计算上方障碍物的总高度（从屏幕顶部到缝隙顶部）
+    const topTotalHeight = gapTopY;
     
-    // 标记数据，供 onHit / 更新位置使用
-    top.setData('type', 'obstacle');
-    bottom.setData('type', 'obstacle');
-    top.setData('worldX', this.nextObstacleX);
-    bottom.setData('worldX', this.nextObstacleX);
+    // 2. 计算下方障碍物的总高度（从缝隙底部到屏幕底部）
+    const bottomTotalHeight = DESIGN.height - gapBottomY;
     
-    // 随机钟乳石形态变化（宽度、旋转角度）- 仅影响视觉，不影响碰撞盒
-    const scaleX = Phaser.Math.FloatBetween(0.9, 1.3);
-    const rotation = Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-4, 4));
-    top.setScale(scaleX, 1.0);
-    top.setRotation(rotation);
+    // 3. 创建上方"山字形"三段碰撞体
+    const topColliders = this.createMountainTopColliders(this.nextObstacleX, gapTopY, topTotalHeight);
     
-    const bottomScaleX = Phaser.Math.FloatBetween(0.9, 1.3);
-    const bottomRotation = Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-4, 4));
-    bottom.setScale(bottomScaleX, 1.0);
-    bottom.setRotation(bottomRotation);
+    // 4. 创建下方"山字形"三段碰撞体
+    const bottomColliders = this.createMountainBottomColliders(this.nextObstacleX, gapBottomY, bottomTotalHeight);
     
-    // === 移除传感器得分逻辑，改为基于飞行距离得分 ===
-    // 原有的 sensor 已删除，不再通过穿过缝隙加分
+    // 5. 可选：添加视觉背景石头图片（不参与碰撞）
+    // const topRock = this.add.image(screenX, gapTopY - topTotalHeight / 2, 'tree-top').setDepth(-1);
+    // const bottomRock = this.add.image(screenX, gapBottomY + bottomTotalHeight / 2, 'tree-bottom').setDepth(-1);
     
     // 记录障碍物组（便于后续清理）
-    this.activeObstacles.push({ top, bottom, x: this.nextObstacleX });
+    // 将所有 6 个碰撞体（上 3 + 下 3）存储起来
+    this.activeObstacles.push({
+      topColliders,
+      bottomColliders,
+      x: this.nextObstacleX,
+      screenX: screenX
+    });
     
     // 更新下一个障碍物位置（应用难度密度系数）
     this.lastObstacleX = this.nextObstacleX;
@@ -930,9 +1057,17 @@ export default class PlayScene extends Phaser.Scene {
       const screenX = group.x - this.worldX;
       
       if (screenX < -500) {
-        group.top.destroy();
-        group.bottom.destroy();
-        // 移除 sensor.destroy()（已不再使用传感器）
+        // 销毁山字形的所有碰撞体（上方3段 + 下方3段）
+        if (group.topColliders) {
+          group.topColliders.forEach(collider => collider.destroy());
+        }
+        if (group.bottomColliders) {
+          group.bottomColliders.forEach(collider => collider.destroy());
+        }
+        // 兼容旧格式（如果还有遗留的 top/bottom）
+        if (group.top) group.top.destroy();
+        if (group.bottom) group.bottom.destroy();
+        
         this.activeObstacles.splice(i, 1);
       }
   }
