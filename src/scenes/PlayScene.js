@@ -296,128 +296,108 @@ export default class PlayScene extends Phaser.Scene {
   }
 
   /**
-   * 创建"山字形"下方障碍物的三段碰撞体（横向紧贴排列，随机高度）
+   * 创建"乐高山字形"底部障碍物（从地面向上堆砖）
    * @param {number} xCenter - 障碍物中心 X 坐标
-   * @param {number} gapBottomY - 缝隙底部 Y 坐标
-   * @param {number} totalHeight - 从地面到缝隙底部的总高度
-   * @returns {Array} 返回三个碰撞体组成的数组 [左段, 中段, 右段]
+   * @param {number} groundY - 地面 Y 坐标（通常是 DESIGN.height）
+   * @param {number} brickWidth - 单个砖块的宽度
+   * @param {number} brickHeight -单个砖块的高度
+   * @returns {Array} 返回所有砖块碰撞体的数组
    * 
-   * 三段高度随机（不对称），所有段顶部对齐到缝隙底部，横向紧贴排列
+   * 乐高山字形：左列1块，中列4块，右列2块（1-4-2）
+   * 从地面向上堆砖，形成"山"字轮廓
    */
-  createMountainBottomColliders(xCenter, gapBottomY, totalHeight) {
-    const segmentWidth = 60; // 每段的宽度
-    
-    // ✅ 随机生成三段高度（不对称，避免上下镜像）
-    // 每段高度在 totalHeight 的 20%~90% 之间随机
-    const heights = [
-      Phaser.Math.FloatBetween(0.2, 0.9) * totalHeight,  // 左段随机
-      Phaser.Math.FloatBetween(0.2, 0.9) * totalHeight,  // 中段随机
-      Phaser.Math.FloatBetween(0.2, 0.9) * totalHeight   // 右段随机
-    ];
-    
-    // 三段水平位置（左、中、右，紧贴排列）
-    const xPositions = [
-      xCenter - segmentWidth,  // 左段
-      xCenter,                 // 中段
-      xCenter + segmentWidth   // 右段
-    ];
-    
+  createLegoMountainBottom(xCenter, groundY, brickWidth, brickHeight) {
+    const columns = [1, 4, 2]; // 左、中、右列的砖块数量
     const colliders = [];
     
-    for (let i = 0; i < 3; i++) {
-      const height = heights[i];
-      const x = xPositions[i];
+    // 遍历三列
+    for (let colIndex = 0; colIndex < 3; colIndex++) {
+      const brickCount = columns[colIndex];
+      // 计算列的 X 坐标：左(-1)、中(0)、右(+1)
+      const x = xCenter + (colIndex - 1) * brickWidth;
       
-      // ✅ 关键：所有段顶部对齐到缝隙底部 gapBottomY
-      // Y 坐标 = gapBottomY + height/2（向下延伸）
-      const y = gapBottomY + height / 2;
-      
-      // 创建碰撞体
-      const collider = this.physics.add.sprite(x, y, 'tree-bottom');
-      collider.setOrigin(0.5, 0.5); // 锚点在中心
-      collider.displayWidth = segmentWidth;
-      collider.displayHeight = height;
-      
-      // ✅ 完全贴合：碰撞盒大小与显示尺寸一致
-      collider.body.setSize(segmentWidth, height);
-      collider.body.setOffset(0, 0);
-      
-      collider.body.setAllowGravity(false);
-      collider.body.setImmovable(true);
-      
-      // 标记为障碍物
-      collider.setData('type', 'obstacle');
-      collider.setData('worldX', xCenter); // 记录世界坐标（用于滚动）
-      collider.setData('segmentIndex', i); // 标记是第几段
-      collider.setData('isTopObstacle', false); // 标记是下方障碍
-      
-      // 添加到障碍物组
-      this.obstacles.add(collider);
-      colliders.push(collider);
+      // 从地面向上堆砖
+      for (let j = 0; j < brickCount; j++) {
+        // Y 坐标：从地面向上，第 j 块砖
+        const y = groundY - brickHeight / 2 - j * brickHeight;
+        
+        // 创建单个砖块
+        const brick = this.physics.add.sprite(x, y, 'tree-bottom');
+        brick.setOrigin(0.5, 0.5); // 锚点在中心
+        brick.displayWidth = brickWidth;
+        brick.displayHeight = brickHeight;
+        
+        // 碰撞盒完全贴合砖块
+        brick.body.setSize(brickWidth, brickHeight);
+        brick.body.setOffset(0, 0);
+        brick.body.setAllowGravity(false);
+        brick.body.setImmovable(true);
+        
+        // 标记为障碍物
+        brick.setData('type', 'obstacle');
+        brick.setData('worldX', xCenter); // 记录世界坐标（用于滚动）
+        brick.setData('colIndex', colIndex); // 标记是第几列
+        brick.setData('brickIndex', j); // 标记是第几块砖
+        brick.setData('isTopObstacle', false);
+        
+        // 添加到障碍物组
+        this.obstacles.add(brick);
+        colliders.push(brick);
+      }
     }
     
     return colliders;
   }
 
   /**
-   * 创建"山字形"上方障碍物的三段碰撞体（横向紧贴排列，随机高度）
+   * 创建"乐高山字形"顶部障碍物（从顶部向下堆砖）
    * @param {number} xCenter - 障碍物中心 X 坐标
-   * @param {number} gapTopY - 缝隙顶部 Y 坐标
-   * @param {number} totalHeight - 从屏幕顶部到缝隙顶部的总高度
-   * @returns {Array} 返回三个碰撞体组成的数组 [左段, 中段, 右段]
+   * @param {number} topY - 顶部 Y 坐标（通常是 gapTopY 或 0）
+   * @param {number} brickWidth - 单个砖块的宽度
+   * @param {number} brickHeight - 单个砖块的高度
+   * @returns {Array} 返回所有砖块碰撞体的数组
    * 
-   * 三段高度随机（不对称），所有段底部对齐到缝隙顶部，横向紧贴排列
+   * 乐高山字形：左列1块，中列4块，右列2块（1-4-2）
+   * 从顶部向下堆砖，形成倒"山"字轮廓
    */
-  createMountainTopColliders(xCenter, gapTopY, totalHeight) {
-    const segmentWidth = 60; // 每段的宽度
-    
-    // ✅ 随机生成三段高度（不对称，避免上下镜像）
-    // 每段高度在 totalHeight 的 20%~90% 之间随机
-    const heights = [
-      Phaser.Math.FloatBetween(0.2, 0.9) * totalHeight,  // 左段随机
-      Phaser.Math.FloatBetween(0.2, 0.9) * totalHeight,  // 中段随机
-      Phaser.Math.FloatBetween(0.2, 0.9) * totalHeight   // 右段随机
-    ];
-    
-    // 三段水平位置（左、中、右，紧贴排列）
-    const xPositions = [
-      xCenter - segmentWidth,  // 左段
-      xCenter,                 // 中段
-      xCenter + segmentWidth   // 右段
-    ];
-    
+  createLegoMountainTop(xCenter, topY, brickWidth, brickHeight) {
+    const columns = [1, 4, 2]; // 左、中、右列的砖块数量
     const colliders = [];
     
-    for (let i = 0; i < 3; i++) {
-      const height = heights[i];
-      const x = xPositions[i];
+    // 遍历三列
+    for (let colIndex = 0; colIndex < 3; colIndex++) {
+      const brickCount = columns[colIndex];
+      // 计算列的 X 坐标：左(-1)、中(0)、右(+1)
+      const x = xCenter + (colIndex - 1) * brickWidth;
       
-      // ✅ 关键：所有段底部对齐到缝隙顶部 gapTopY
-      // Y 坐标 = gapTopY - height/2（向上延伸）
-      const y = gapTopY - height / 2;
-      
-      // 创建碰撞体
-      const collider = this.physics.add.sprite(x, y, 'tree-top');
-      collider.setOrigin(0.5, 0.5); // 锚点在中心
-      collider.displayWidth = segmentWidth;
-      collider.displayHeight = height;
-      
-      // ✅ 完全贴合：碰撞盒大小与显示尺寸一致
-      collider.body.setSize(segmentWidth, height);
-      collider.body.setOffset(0, 0);
-      
-      collider.body.setAllowGravity(false);
-      collider.body.setImmovable(true);
-      
-      // 标记为障碍物
-      collider.setData('type', 'obstacle');
-      collider.setData('worldX', xCenter); // 记录世界坐标（用于滚动）
-      collider.setData('segmentIndex', i); // 标记是第几段
-      collider.setData('isTopObstacle', true); // 标记是上方障碍
-      
-      // 添加到障碍物组
-      this.obstacles.add(collider);
-      colliders.push(collider);
+      // 从顶部向下堆砖
+      for (let j = 0; j < brickCount; j++) {
+        // Y 坐标：从顶部向下，第 j 块砖
+        const y = topY + brickHeight / 2 + j * brickHeight;
+        
+        // 创建单个砖块
+        const brick = this.physics.add.sprite(x, y, 'tree-top');
+        brick.setOrigin(0.5, 0.5); // 锚点在中心
+        brick.displayWidth = brickWidth;
+        brick.displayHeight = brickHeight;
+        
+        // 碰撞盒完全贴合砖块
+        brick.body.setSize(brickWidth, brickHeight);
+        brick.body.setOffset(0, 0);
+        brick.body.setAllowGravity(false);
+        brick.body.setImmovable(true);
+        
+        // 标记为障碍物
+        brick.setData('type', 'obstacle');
+        brick.setData('worldX', xCenter); // 记录世界坐标（用于滚动）
+        brick.setData('colIndex', colIndex); // 标记是第几列
+        brick.setData('brickIndex', j); // 标记是第几块砖
+        brick.setData('isTopObstacle', true);
+        
+        // 添加到障碍物组
+        this.obstacles.add(brick);
+        colliders.push(brick);
+      }
     }
     
     return colliders;
@@ -454,31 +434,26 @@ export default class PlayScene extends Phaser.Scene {
     // 计算屏幕位置（世界坐标 - worldX）
     const screenX = this.nextObstacleX - this.worldX;
     
-    // === 山字形三段障碍物系统 ===
+    // === 乐高山字形砖块障碍物系统 ===
     
-    // 1. 计算上方障碍物的总高度（从屏幕顶部到缝隙顶部）
-    const topTotalHeight = gapTopY;
-    
-    // 2. 计算下方障碍物的总高度（从缝隙底部到屏幕底部）
-    const bottomTotalHeight = DESIGN.height - gapBottomY;
-    
-    // 3. ✅ 添加随机水平偏移（在合理范围内，避免超出屏幕）
+    // 1. ✅ 添加随机水平偏移（在合理范围内，避免超出屏幕）
     // 随机偏移范围：-100px ~ +100px
     const randomOffsetX = Phaser.Math.Between(-100, 100);
     const obstacleX = this.nextObstacleX + randomOffsetX;
     
-    // 4. 创建上方"山字形"三段碰撞体（使用随机偏移后的 X 坐标）
-    const topColliders = this.createMountainTopColliders(obstacleX, gapTopY, topTotalHeight);
+    // 2. 配置乐高砖块尺寸
+    const brickWidth = 50;   // 砖块宽度
+    const brickHeight = 50;  // 砖块高度
     
-    // 5. 创建下方"山字形"三段碰撞体（使用随机偏移后的 X 坐标）
-    const bottomColliders = this.createMountainBottomColliders(obstacleX, gapBottomY, bottomTotalHeight);
+    // 3. 创建底部乐高山字形障碍（从地面向上堆砖：左1块，中4块，右2块）
+    const groundY = DESIGN.height;
+    const bottomColliders = this.createLegoMountainBottom(obstacleX, groundY, brickWidth, brickHeight);
     
-    // 6. 可选：添加视觉背景石头图片（不参与碰撞）
-    // const topRock = this.add.image(screenX, gapTopY - topTotalHeight / 2, 'tree-top').setDepth(-1);
-    // const bottomRock = this.add.image(screenX, gapBottomY + bottomTotalHeight / 2, 'tree-bottom').setDepth(-1);
+    // 4. 创建顶部乐高山字形障碍（从顶部向下堆砖：左1块，中4块，右2块）
+    const topColliders = this.createLegoMountainTop(obstacleX, gapTopY, brickWidth, brickHeight);
     
     // 记录障碍物组（便于后续清理）
-    // 将所有 6 个碰撞体（上 3 + 下 3）存储起来
+    // 将所有砖块碰撞体存储起来
     this.activeObstacles.push({
       topColliders,
       bottomColliders,
