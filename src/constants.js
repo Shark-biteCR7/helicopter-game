@@ -44,7 +44,7 @@ export const CHAPTERS = [
         goalPosition: 5800,
         starThresholds: { star3: 5, star2: 3, star1: 1 },
         // 动态生成配置 - 关卡1：入门难度，障碍稀疏，缝隙宽
-        obstacleDensity: 900,  // 障碍间距较大
+        obstacleDensity: 650,  // 原900，改为650增加障碍密度（约9-10组）
         gapHeight: { min: 260, max: 320 },  // 缝隙较宽
         gapCenterY: { min: 400, max: 880 }  // 缝隙中心垂直范围
       },
@@ -57,7 +57,7 @@ export const CHAPTERS = [
         goalPosition: 6800,
         starThresholds: { star3: 5, star2: 3, star1: 1 },
         // 关卡2：初级难度，障碍略密，缝隙略窄
-        obstacleDensity: 800,
+        obstacleDensity: 600,  // 原800，改为600增加障碍密度
         gapHeight: { min: 240, max: 300 },
         gapCenterY: { min: 380, max: 900 }  // 垂直变化略大
       },
@@ -70,7 +70,7 @@ export const CHAPTERS = [
         goalPosition: 7800,
         starThresholds: { star3: 5, star2: 3, star1: 1 },
         // 关卡3：中级难度，障碍更密，缝隙更窄
-        obstacleDensity: 700,
+        obstacleDensity: 550,  // 原700，改为550增加障碍密度
         gapHeight: { min: 220, max: 280 },
         gapCenterY: { min: 360, max: 920 }  // 垂直变化加大
       },
@@ -83,7 +83,7 @@ export const CHAPTERS = [
         goalPosition: 8800,
         starThresholds: { star3: 5, star2: 3, star1: 1 },
         // 关卡4：高级难度，障碍密集，缝隙狭窄
-        obstacleDensity: 650,
+        obstacleDensity: 500,  // 原650，改为500增加障碍密度
         gapHeight: { min: 200, max: 260 },
         gapCenterY: { min: 340, max: 940 }  // 垂直变化剧烈
       },
@@ -96,7 +96,7 @@ export const CHAPTERS = [
         goalPosition: 9800,
         starThresholds: { star3: 5, star2: 3, star1: 1 },
         // 关卡5：地狱难度，障碍极密，缝隙极窄
-        obstacleDensity: 600,
+        obstacleDensity: 450,  // 原600，改为450增加障碍密度
         gapHeight: { min: 180, max: 240 },
         gapCenterY: { min: 320, max: 960 }  // 垂直变化最大
       }

@@ -15,7 +15,7 @@ const config = {
   width: DESIGN.width,
   height: DESIGN.height,
   backgroundColor: DESIGN.bgColor,
-  physics: { default: 'arcade', arcade: { debug: false } },
+  physics: { default: 'arcade', arcade: { debug: true } },  // 开启碰撞箱调试可视化
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

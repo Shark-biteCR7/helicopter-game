@@ -320,7 +320,7 @@ export default class PlayScene extends Phaser.Scene {
     const densityMultiplier = gapConfig.densityMultiplier;
     
     // 计算上下障碍物位置
-    const topHeight = gapCenterY - gapHeight / 2;
+    const topY = gapCenterY - gapHeight / 2;
     const bottomY = gapCenterY + gapHeight / 2;
     
     // 计算屏幕位置（世界坐标 - worldX）
@@ -329,44 +329,26 @@ export default class PlayScene extends Phaser.Scene {
     // 获取本关的钟乳石贴图 key（预留扩展点）
     const spriteKeys = this.getObstacleSpriteKeysForLevel(level);
     
-    // 随机钟乳石形态变化（宽度、旋转角度）
-    const scaleX = Phaser.Math.FloatBetween(0.9, 1.3); // 横向缩放模拟粗细不同
-    const rotation = Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-4, 4)); // 轻微旋转增加自然感
+    // ✅ 使用已调好的 acquireObstacle() 来生成障碍和碰撞盒
+    const top = this.acquireObstacle(spriteKeys.top, screenX, topY, true);
+    const bottom = this.acquireObstacle(spriteKeys.bottom, screenX, bottomY, false);
     
-    // === 创建上方障碍（顶部钟乳石，从上垂下） ===
-    const top = this.obstacles.create(screenX, topHeight / 2, spriteKeys.top);
-    top.setOrigin(0.5, 1); // 锚点在底部，向下悬挂
+    // 标记数据，供 onHit / 更新位置使用
     top.setData('type', 'obstacle');
+    bottom.setData('type', 'obstacle');
     top.setData('worldX', this.nextObstacleX);
+    bottom.setData('worldX', this.nextObstacleX);
     
-    // 应用钟乳石形态变化
+    // 随机钟乳石形态变化（宽度、旋转角度）- 仅影响视觉，不影响碰撞盒
+    const scaleX = Phaser.Math.FloatBetween(0.9, 1.3);
+    const rotation = Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-4, 4));
     top.setScale(scaleX, 1.0);
     top.setRotation(rotation);
     
-    // 计算碰撞体：宽度 70%，高度按真实覆盖区域
-    const topBodyW = top.width * 0.7 * scaleX;
-    const topBodyH = Math.max(40, topHeight * 0.9);
-    top.body.setSize(topBodyW, topBodyH);
-    top.body.setOffset((top.width * scaleX - topBodyW) / 2, Math.max(0, top.height - topBodyH));
-    
-    // === 创建下方障碍（底部钟乳石，从下长出） ===
-    const bottomHeight = DESIGN.height - bottomY;
-    const bottom = this.obstacles.create(screenX, bottomY + bottomHeight / 2, spriteKeys.bottom);
-    bottom.setOrigin(0.5, 0); // 锚点在顶部，向上生长
-    bottom.setData('type', 'obstacle');
-    bottom.setData('worldX', this.nextObstacleX);
-    
-    // 应用钟乳石形态变化（下方可以独立随机，也可以与上方对称）
     const bottomScaleX = Phaser.Math.FloatBetween(0.9, 1.3);
     const bottomRotation = Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-4, 4));
     bottom.setScale(bottomScaleX, 1.0);
     bottom.setRotation(bottomRotation);
-    
-    // 计算碰撞体
-    const bottomBodyW = bottom.width * 0.7 * bottomScaleX;
-    const bottomBodyH = Math.max(40, bottomHeight * 0.9);
-    bottom.body.setSize(bottomBodyW, bottomBodyH);
-    bottom.body.setOffset((bottom.width * bottomScaleX - bottomBodyW) / 2, 0);
     
     // === 创建得分传感器（穿过缝隙时触发） ===
     const sensor = this.physics.add.sprite(screenX + 50, gapCenterY, null);
