@@ -1,0 +1,13 @@
+{
+  "name": "helicopter-escape-test",
+  "version": "1.0.0",
+  "description": "自动化测试脚本",
+  "scripts": {
+    "test": "node test-game.js",
+    "serve": "python3 -m http.server 8080"
+  },
+  "devDependencies": {
+    "puppeteer": "^21.0.0",
+    "serve-handler": "^6.1.5"
+  }
+}

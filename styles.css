@@ -1,0 +1,248 @@
+/* 全局样式与变量 */
+:root {
+	--bg: #0b1020;
+	--panel: #101831cc;
+	--primary: #08c;
+	--primary-2: #06a;
+	--text: #e9eef7;
+	--muted: #9fb1c7;
+	--danger: #ff5370;
+	--success: #2ecc71;
+	--shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+* {
+	box-sizing: border-box;
+	-webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+	margin: 0;
+	height: 100%;
+	background: radial-gradient(1200px 800px at 20% 10%, #0f1a35, var(--bg));
+	color: var(--text);
+	font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+}
+
+#app {
+	min-height: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
+}
+
+.top-bar {
+	width: 100%;
+	max-width: 560px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-top: 6px;
+	padding: 8px 10px;
+	background: #0b1531a6;
+	border: 1px solid #223056;
+	border-radius: 12px;
+	backdrop-filter: blur(6px);
+	box-shadow: var(--shadow);
+}
+
+.title {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 700;
+	letter-spacing: 0.5px;
+}
+
+.score-wrap {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 8px;
+	font-size: 14px;
+	color: var(--muted);
+}
+
+.score-wrap strong {
+	color: var(--text);
+	font-size: 20px;
+	min-width: 40px;
+	text-align: right;
+}
+
+.en {
+	display: block;
+	font-size: 11px;
+	color: var(--muted);
+	letter-spacing: 0.2px;
+}
+
+.stage {
+	position: relative;
+	width: 100%;
+	max-width: 760px;
+	aspect-ratio: 16 / 9;
+	background: linear-gradient(180deg, #061024 0%, #08142c 100%);
+	border: 1px solid #223056;
+	border-radius: 16px;
+	box-shadow: var(--shadow);
+	overflow: hidden;
+}
+
+canvas#game {
+	width: 100%;
+	height: 100%;
+	display: block;
+	image-rendering: pixelated;
+	image-rendering: crisp-edges;
+}
+
+.overlay {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	background: linear-gradient(180deg, #00000066, #00000066);
+}
+
+.overlay.hidden {
+	display: none;
+}
+
+.panel {
+	width: min(92%, 440px);
+	background: var(--panel);
+	border: 1px solid #223056;
+	border-radius: 14px;
+	padding: 18px 16px;
+	box-shadow: var(--shadow);
+	text-align: center;
+}
+
+.panel h2 {
+	margin: 6px 0 10px;
+	font-size: 20px;
+}
+
+.panel p {
+	margin: 0 0 14px;
+	color: var(--muted);
+}
+
+.form {
+	display: flex;
+	gap: 8px;
+	justify-content: center;
+	margin-bottom: 8px;
+}
+.input {
+	flex: 1;
+	min-width: 160px;
+	max-width: 240px;
+	padding: 10px 12px;
+	border-radius: 10px;
+	border: 1px solid #2a3c63;
+	background: #0f1731;
+	color: var(--text);
+}
+.error {
+	color: var(--danger);
+}
+
+.subtitle {
+	margin: 8px 0;
+	font-size: 14px;
+	color: var(--text);
+	opacity: 0.9;
+}
+
+.buttons {
+	display: flex;
+	justify-content: center;
+	gap: 10px;
+}
+
+.btn {
+	appearance: none;
+	border: none;
+	border-radius: 12px;
+	padding: 10px 14px;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.btn .en {
+	font-weight: 600;
+	opacity: 0.9;
+}
+
+.btn.primary {
+	background: var(--primary);
+	color: white;
+}
+.btn.primary:active {
+	background: var(--primary-2);
+}
+.btn.secondary {
+	background: transparent;
+	color: var(--text);
+	border: 1px solid #2a3c63;
+}
+.btn.secondary:active {
+	background: #1b2746;
+}
+
+.btn.hidden {
+	display: none;
+}
+
+.btn.disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.level-select {
+	margin-top: 12px;
+}
+.level-grid {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: 8px;
+}
+.skin-grid {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: 8px;
+	margin-top: 8px;
+}
+.btn.skin {
+	padding: 10px 6px;
+	font-size: 13px;
+}
+.btn.level {
+	padding: 10px 0;
+	font-size: 14px;
+}
+
+.btn.level.locked {
+	border-style: dashed;
+}
+
+.revive-wrap {
+	margin-top: 12px;
+}
+
+.hint {
+	max-width: 560px;
+	color: var(--muted);
+	font-size: 12px;
+	text-align: center;
+	margin-bottom: 8px;
+}
+
+@media (min-width: 720px) {
+	.title { font-size: 20px; }
+	.score-wrap strong { font-size: 22px; }
+}
+
+
