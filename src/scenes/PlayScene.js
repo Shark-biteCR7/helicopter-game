@@ -159,7 +159,80 @@ export default class PlayScene extends Phaser.Scene {
     this.createFinishLineAtGoal();
   }
 
-  // 动态生成单个障碍物
+  /**
+   * 根据关卡获取障碍物贴图 key（预留扩展点）
+   * 当前使用 tree-top / tree-bottom，未来可替换为钟乳石专用素材
+   */
+  getObstacleSpriteKeysForLevel(level) {
+    // 未来扩展：根据关卡 levelId 返回不同的钟乳石贴图数组
+    // 例如：levelId 1-2 用浅色钟乳石，3-4 用深色，5 用特殊形状
+    const topSpriteKeys = ['tree-top'];    // 将来可扩展为 ['stalactite_top_1', 'stalactite_top_2', ...]
+    const bottomSpriteKeys = ['tree-bottom']; // 将来可扩展为 ['stalagmite_bottom_1', 'stalagmite_bottom_2', ...]
+    
+    return {
+      top: Phaser.Utils.Array.GetRandom(topSpriteKeys),
+      bottom: Phaser.Utils.Array.GetRandom(bottomSpriteKeys)
+    };
+  }
+
+  /**
+   * 根据关卡和当前进度动态计算缝隙参数
+   * @param {Object} level - 当前关卡配置
+   * @param {number} distanceRatio - 当前进度比例 (0~1)，0 表示起点，1 表示终点
+   * @returns {{ gapHeight: number, gapCenterY: number }}
+   */
+  getGapConfigForCurrentLevel(level, distanceRatio) {
+    const levelId = level.levelId || 1;
+    const gapHeightMin = level.gapHeight?.min || 200;
+    const gapHeightMax = level.gapHeight?.max || 280;
+    const gapCenterYMin = level.gapCenterY?.min || 400;
+    const gapCenterYMax = level.gapCenterY?.max || 880;
+    
+    // 难度递增策略：
+    // 1. 前 20% 区域：相对简单（gapHeight 偏向最大值，gapCenterY 波动小）
+    // 2. 中间 60% 区域：正常难度
+    // 3. 后 20% 区域：最难（gapHeight 偏向最小值，gapCenterY 波动大）
+    
+    let gapHeightBias = 0.5; // 0 表示最小值，1 表示最大值
+    let gapCenterYVariance = 1.0; // 波动系数
+    
+    if (distanceRatio < 0.2) {
+      // 前 20%：简单区域
+      gapHeightBias = 0.7 + Math.random() * 0.3; // 偏向大缝隙
+      gapCenterYVariance = 0.6; // 波动小
+    } else if (distanceRatio > 0.8) {
+      // 后 20%：困难区域
+      gapHeightBias = 0.0 + Math.random() * 0.3; // 偏向小缝隙
+      gapCenterYVariance = 1.2; // 波动大
+    } else {
+      // 中间 60%：正常区域
+      gapHeightBias = 0.3 + Math.random() * 0.5;
+      gapCenterYVariance = 1.0;
+    }
+    
+    // 计算实际 gapHeight（带难度偏向）
+    const gapHeight = Math.floor(
+      gapHeightMin + (gapHeightMax - gapHeightMin) * gapHeightBias
+    );
+    
+    // 计算实际 gapCenterY（带波动系数）
+    const gapCenterYRange = (gapCenterYMax - gapCenterYMin) * gapCenterYVariance;
+    const gapCenterYMid = (gapCenterYMax + gapCenterYMin) / 2;
+    const gapCenterY = Math.floor(
+      gapCenterYMid - gapCenterYRange / 2 + Math.random() * gapCenterYRange
+    );
+    
+    // 根据关卡 levelId 调整密度系数（后面的关更密集）
+    const densityMultiplier = 1.0 - (levelId - 1) * 0.05; // 关卡 1: 1.0, 关卡 5: 0.8
+    
+    return {
+      gapHeight: Math.max(150, gapHeight), // 最小不低于 150
+      gapCenterY: Phaser.Math.Clamp(gapCenterY, gapCenterYMin, gapCenterYMax),
+      densityMultiplier
+    };
+  }
+
+  // 动态生成单个障碍物（钟乳石洞穴风格）
   spawnNextObstacle() {
     if (!this.levelContext || !this.levelContext.level) {
       console.error('❌ spawnNextObstacle: levelContext 未初始化！');
@@ -167,21 +240,21 @@ export default class PlayScene extends Phaser.Scene {
     }
     
     const level = this.levelContext.level;
-    const density = level.obstacleDensity || 800;
+    const baseDensity = level.obstacleDensity || 800;
     
     // 如果超过终点位置，不再生成
     if (this.nextObstacleX >= this.goalPosition) {
       return;
     }
     
-    // 随机生成缝隙参数
-    const gapHeightMin = level.gapHeight?.min || 200;
-    const gapHeightMax = level.gapHeight?.max || 280;
-    const gapCenterYMin = level.gapCenterY?.min || 400;
-    const gapCenterYMax = level.gapCenterY?.max || 880;
+    // 计算当前进度比例 (0~1)
+    const distanceRatio = this.nextObstacleX / this.goalPosition;
     
-    const gapHeight = Phaser.Math.Between(gapHeightMin, gapHeightMax);
-    const gapCenterY = Phaser.Math.Between(gapCenterYMin, gapCenterYMax);
+    // 使用动态难度配置
+    const gapConfig = this.getGapConfigForCurrentLevel(level, distanceRatio);
+    const gapHeight = gapConfig.gapHeight;
+    const gapCenterY = gapConfig.gapCenterY;
+    const densityMultiplier = gapConfig.densityMultiplier;
     
     // 计算上下障碍物位置
     const topHeight = gapCenterY - gapHeight / 2;
@@ -190,37 +263,58 @@ export default class PlayScene extends Phaser.Scene {
     // 计算屏幕位置（世界坐标 - worldX）
     const screenX = this.nextObstacleX - this.worldX;
     
-  // 创建上方障碍（Kenney tile 更方，扩大宽度，保持安全间隙）
-  const top = this.obstacles.create(screenX, topHeight / 2, 'tree-top');
-  top.setOrigin(0.5, 1);
-  top.setData('type', 'obstacle');
-  top.setData('worldX', this.nextObstacleX);
-  // 计算碰撞体：高度按真实可覆盖高度限制，宽度 70%
-  const topBodyW = top.width * 0.7;
-  const topBodyH = Math.max(40, topHeight * 0.9);
-  top.body.setSize(topBodyW, topBodyH);
-  top.body.setOffset((top.width - topBodyW) / 2, Math.max(0, top.height - topBodyH));
+    // 获取本关的钟乳石贴图 key（预留扩展点）
+    const spriteKeys = this.getObstacleSpriteKeysForLevel(level);
     
-  // 创建下方障碍
-  const bottom = this.obstacles.create(screenX, bottomY + (DESIGN.height - bottomY) / 2, 'tree-bottom');
-  bottom.setOrigin(0.5, 0);
-  bottom.setData('type', 'obstacle');
-  bottom.setData('worldX', this.nextObstacleX);
-  const bottomHeight = DESIGN.height - bottomY;
-  const bottomBodyW = bottom.width * 0.7;
-  const bottomBodyH = Math.max(40, bottomHeight * 0.9);
-  bottom.body.setSize(bottomBodyW, bottomBodyH);
-  bottom.body.setOffset((bottom.width - bottomBodyW) / 2, 0);
+    // 随机钟乳石形态变化（宽度、旋转角度）
+    const scaleX = Phaser.Math.FloatBetween(0.9, 1.3); // 横向缩放模拟粗细不同
+    const rotation = Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-4, 4)); // 轻微旋转增加自然感
     
-    // 创建得分传感器
+    // === 创建上方障碍（顶部钟乳石，从上垂下） ===
+    const top = this.obstacles.create(screenX, topHeight / 2, spriteKeys.top);
+    top.setOrigin(0.5, 1); // 锚点在底部，向下悬挂
+    top.setData('type', 'obstacle');
+    top.setData('worldX', this.nextObstacleX);
+    
+    // 应用钟乳石形态变化
+    top.setScale(scaleX, 1.0);
+    top.setRotation(rotation);
+    
+    // 计算碰撞体：宽度 70%，高度按真实覆盖区域
+    const topBodyW = top.width * 0.7 * scaleX;
+    const topBodyH = Math.max(40, topHeight * 0.9);
+    top.body.setSize(topBodyW, topBodyH);
+    top.body.setOffset((top.width * scaleX - topBodyW) / 2, Math.max(0, top.height - topBodyH));
+    
+    // === 创建下方障碍（底部钟乳石，从下长出） ===
+    const bottomHeight = DESIGN.height - bottomY;
+    const bottom = this.obstacles.create(screenX, bottomY + bottomHeight / 2, spriteKeys.bottom);
+    bottom.setOrigin(0.5, 0); // 锚点在顶部，向上生长
+    bottom.setData('type', 'obstacle');
+    bottom.setData('worldX', this.nextObstacleX);
+    
+    // 应用钟乳石形态变化（下方可以独立随机，也可以与上方对称）
+    const bottomScaleX = Phaser.Math.FloatBetween(0.9, 1.3);
+    const bottomRotation = Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-4, 4));
+    bottom.setScale(bottomScaleX, 1.0);
+    bottom.setRotation(bottomRotation);
+    
+    // 计算碰撞体
+    const bottomBodyW = bottom.width * 0.7 * bottomScaleX;
+    const bottomBodyH = Math.max(40, bottomHeight * 0.9);
+    bottom.body.setSize(bottomBodyW, bottomBodyH);
+    bottom.body.setOffset((bottom.width * bottomScaleX - bottomBodyW) / 2, 0);
+    
+    // === 创建得分传感器（穿过缝隙时触发） ===
     const sensor = this.physics.add.sprite(screenX + 50, gapCenterY, null);
     sensor.setSize(20, gapHeight);
-    sensor.setAlpha(0);
+    sensor.setAlpha(0); // 不可见
     sensor.body.setAllowGravity(false);
     sensor.setData('scored', false);
-    sensor.setData('worldX', this.nextObstacleX + 50); // 保存世界坐标
+    sensor.setData('worldX', this.nextObstacleX + 50);
     this.activeSensors.push(sensor);
     
+    // 传感器碰撞检测：通过缝隙时加分
     this.physics.add.overlap(this.heli, sensor, () => {
       if (!sensor.getData('scored')) {
         sensor.setData('scored', true);
@@ -229,12 +323,12 @@ export default class PlayScene extends Phaser.Scene {
       }
     });
     
-    // 记录障碍物组
+    // 记录障碍物组（便于后续清理）
     this.activeObstacles.push({ top, bottom, sensor, x: this.nextObstacleX });
     
-    // 更新下一个障碍物位置
+    // 更新下一个障碍物位置（应用难度密度系数）
     this.lastObstacleX = this.nextObstacleX;
-    this.nextObstacleX += density;
+    this.nextObstacleX += Math.floor(baseDensity * densityMultiplier);
   }
 
   spawnObstacleAt(obstacleData) {
