@@ -63,7 +63,8 @@ export function createUIButton(scene, {
   container.setSize(width, height);
   container.setInteractive(
     new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height),
-    Phaser.Geom.Rectangle.Contains
+    Phaser.Geom.Rectangle.Contains,
+    true // useHandCursor
   );
   container.on('pointerover', () => {
     container.setScale(UI_THEME.buttons.hoverScale);

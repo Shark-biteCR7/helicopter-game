@@ -229,16 +229,17 @@ export default class PlayScene extends Phaser.Scene {
     top.setOrigin(0.5, 1);
     top.setData('type', 'obstacle');
     top.setData('worldX', this.nextObstacleX); // 保存世界坐标
-    top.body.setSize(top.width * 0.8, topHeight);
-    top.body.updateFromGameObject();
+    top.body.setSize(top.width * 0.5, topHeight * 0.85); // 缩小碰撞体积
+    top.body.setOffset(top.width * 0.25, topHeight * 0.15); // 向中心偏移
     
     // 创建下方障碍
     const bottom = this.obstacles.create(screenX, bottomY + (DESIGN.height - bottomY) / 2, 'tree-bottom');
     bottom.setOrigin(0.5, 0);
     bottom.setData('type', 'obstacle');
     bottom.setData('worldX', this.nextObstacleX); // 保存世界坐标
-    bottom.body.setSize(bottom.width * 0.8, DESIGN.height - bottomY);
-    bottom.body.updateFromGameObject();
+    const bottomHeight = DESIGN.height - bottomY;
+    bottom.body.setSize(bottom.width * 0.5, bottomHeight * 0.85); // 缩小碰撞体积
+    bottom.body.setOffset(bottom.width * 0.25, bottomHeight * 0.15); // 向中心偏移
     
     // 创建得分传感器
     const sensor = this.physics.add.sprite(screenX + 50, gapCenterY, null);
@@ -555,11 +556,11 @@ export default class PlayScene extends Phaser.Scene {
     ob.x = x;
     ob.y = y;
   ob.body.reset(x, y);
-    const width = ob.width * 0.6;
-    const height = ob.height * 0.85;
+    const width = ob.width * 0.45;  // 进一步缩小宽度
+    const height = ob.height * 0.75; // 进一步缩小高度
     ob.body.setSize(width, height);
     const offsetX = (ob.width - width) / 2;
-    const offsetY = isTop ? ob.height - height - (ob.height * 0.05) : ob.height * 0.05;
+    const offsetY = isTop ? ob.height - height - (ob.height * 0.1) : ob.height * 0.15;
     ob.body.setOffset(offsetX, offsetY);
     ob.body.updateFromGameObject();
     return ob;

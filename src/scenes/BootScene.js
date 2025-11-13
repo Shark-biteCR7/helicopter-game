@@ -39,25 +39,22 @@ export default class BootScene extends Phaser.Scene {
     }
     g.generateTexture('field-ground', DESIGN.width, 240);
 
-  // 树干障碍（底部）
+  // 彩色几何障碍（底部）- 圆形+矩形组合
   g.clear();
-  g.fillStyle(0x2c7e3b, 1);
-  g.fillRect(6, 0, 108, 96);
-  g.fillRect(20, 90, 80, 40);
-  g.fillRect(33, 120, 56, 28);
-  g.fillStyle(0x3a2411, 1);
-  g.fillRect(54, 96, 28, 160);
-  g.fillRect(44, 232, 48, 24);
+  g.fillStyle(0xff6b6b, 1); // 红色
+  g.fillCircle(60, 60, 48);
+  g.fillStyle(0xffd93d, 1); // 黄色
+  g.fillRect(20, 80, 80, 176);
   g.generateTexture('tree-bottom', 120, 256);
 
-  // 树冠障碍（顶部）
-    g.clear();
-  g.fillStyle(0x2c7e3b, 1);
-  g.fillRect(4, 0, 112, 80);
-  g.fillRect(16, 72, 90, 48);
-  g.fillRect(36, 116, 56, 28);
-  g.fillStyle(0x3a2411, 1);
-  g.fillRect(54, 128, 28, 74);
+  // 彩色几何障碍（顶部）- 三角形+菱形
+  g.clear();
+  g.fillStyle(0x6bcf7f, 1); // 绿色
+  g.fillTriangle(60, 20, 20, 100, 100, 100);
+  g.fillStyle(0xa29bfe, 1); // 紫色
+  g.fillRect(40, 100, 40, 40);
+  g.fillStyle(0x74b9ff, 1); // 蓝色
+  g.fillRect(30, 110, 60, 90);
   g.generateTexture('tree-top', 120, 200);
 
     // 云朵
