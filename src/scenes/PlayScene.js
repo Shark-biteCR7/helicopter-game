@@ -591,6 +591,12 @@ export default class PlayScene extends Phaser.Scene {
       return; // 不是障碍物，忽略
     }
     
+    // 如果是地面碰撞，重置直升机位置避免卡住
+    if (colliderType === 'ground') {
+      heli.setVelocityY(-200); // 给一个向上的速度
+      heli.y = DESIGN.height - 180; // 重置到安全位置
+    }
+    
     // 减少一条命
     this.lives -= 1;
     this.livesLostCount += 1; // 记录失去的生命数（用于计算星级）

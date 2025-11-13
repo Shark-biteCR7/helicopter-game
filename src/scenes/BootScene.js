@@ -39,22 +39,38 @@ export default class BootScene extends Phaser.Scene {
     }
     g.generateTexture('field-ground', DESIGN.width, 240);
 
-  // 彩色几何障碍（底部）- 圆形+矩形组合
+  // 山洞岩石障碍（底部）- 不规则凸起的钟乳石感觉
   g.clear();
-  g.fillStyle(0xff6b6b, 1); // 红色
-  g.fillCircle(60, 60, 48);
-  g.fillStyle(0xffd93d, 1); // 黄色
-  g.fillRect(20, 80, 80, 176);
+  g.fillStyle(0x8b7355, 1); // 深褐色基底
+  g.fillRect(0, 200, 120, 56);
+  g.fillStyle(0xa0826d, 1); // 浅褐色
+  // 不规则锯齿状钟乳石
+  g.fillTriangle(15, 200, 5, 140, 25, 200);
+  g.fillTriangle(40, 200, 30, 120, 50, 200);
+  g.fillTriangle(65, 200, 55, 160, 75, 200);
+  g.fillTriangle(90, 200, 80, 100, 100, 200);
+  g.fillStyle(0x6b5344, 1); // 阴影
+  g.fillRect(5, 220, 15, 36);
+  g.fillRect(30, 220, 20, 36);
+  g.fillRect(55, 220, 15, 36);
+  g.fillRect(80, 220, 20, 36);
   g.generateTexture('tree-bottom', 120, 256);
 
-  // 彩色几何障碍（顶部）- 三角形+菱形
+  // 山洞岩石障碍（顶部）- 向下生长的石笋
   g.clear();
-  g.fillStyle(0x6bcf7f, 1); // 绿色
-  g.fillTriangle(60, 20, 20, 100, 100, 100);
-  g.fillStyle(0xa29bfe, 1); // 紫色
-  g.fillRect(40, 100, 40, 40);
-  g.fillStyle(0x74b9ff, 1); // 蓝色
-  g.fillRect(30, 110, 60, 90);
+  g.fillStyle(0x8b7355, 1); // 深褐色
+  g.fillRect(0, 0, 120, 50);
+  g.fillStyle(0xa0826d, 1); // 浅褐色
+  // 倒三角石笋形状
+  g.fillTriangle(20, 50, 10, 120, 30, 50);
+  g.fillTriangle(45, 50, 35, 100, 55, 50);
+  g.fillTriangle(70, 50, 60, 140, 80, 50);
+  g.fillTriangle(95, 50, 85, 110, 105, 50);
+  g.fillStyle(0x6b5344, 1); // 暗部纹理
+  g.fillRect(10, 10, 12, 30);
+  g.fillRect(35, 10, 15, 30);
+  g.fillRect(60, 10, 12, 30);
+  g.fillRect(85, 10, 15, 30);
   g.generateTexture('tree-top', 120, 200);
 
     // 云朵
