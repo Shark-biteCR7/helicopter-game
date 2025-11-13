@@ -106,39 +106,6 @@ export default class LevelCompleteScene extends Phaser.Scene {
     const buttonY = 200;
     const buttonSpacing = 90;
 
-    // 下一关按钮
-    panel.add(
-      createUIButton(this, {
-        x: 0,
-        y: buttonY,
-        label: '下一关',
-        variant: 'success',
-        onClick: () => this.goToNextLevel()
-      })
-    );
-
-    // 重玩按钮
-    panel.add(
-      createUIButton(this, {
-        x: 0,
-        y: buttonY + buttonSpacing,
-        label: '重玩本关',
-        variant: 'primary',
-        onClick: () => this.retryLevel()
-      })
-    );
-
-    // 返回菜单按钮
-    panel.add(
-      createUIButton(this, {
-        x: 0,
-        y: buttonY + buttonSpacing * 2,
-        label: '返回菜单',
-        variant: 'neutral',
-        onClick: () => this.goToMenu()
-      })
-    );
-
     // 缩放动画
     panel.setScale(0.3);
     this.tweens.add({
@@ -146,6 +113,46 @@ export default class LevelCompleteScene extends Phaser.Scene {
       scale: 1,
       duration: 400,
       ease: 'Back.easeOut'
+    });
+
+    // 按钮独立创建，不加入panel（避免被缩放动画影响交互）
+    const nextBtn = createUIButton(this, {
+      x: cx,
+      y: cy + buttonY,
+      label: '下一关',
+      variant: 'success',
+      onClick: () => this.goToNextLevel()
+    });
+    nextBtn.setDepth(10);
+
+    const retryBtn = createUIButton(this, {
+      x: cx,
+      y: cy + buttonY + buttonSpacing,
+      label: '重玩本关',
+      variant: 'primary',
+      onClick: () => this.retryLevel()
+    });
+    retryBtn.setDepth(10);
+
+    const homeBtn = createUIButton(this, {
+      x: cx,
+      y: cy + buttonY + buttonSpacing * 2,
+      label: '返回菜单',
+      variant: 'neutral',
+      onClick: () => this.goToMenu()
+    });
+    homeBtn.setDepth(10);
+
+    // 按钮从小放大动画
+    [nextBtn, retryBtn, homeBtn].forEach((btn, i) => {
+      btn.setScale(0);
+      this.tweens.add({
+        targets: btn,
+        scale: 1,
+        duration: 300,
+        delay: 400 + i * 100,
+        ease: 'Back.easeOut'
+      });
     });
 
     // 星星逐个出现动画
