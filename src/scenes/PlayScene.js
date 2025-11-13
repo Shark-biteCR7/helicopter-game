@@ -160,7 +160,7 @@ export default class PlayScene extends Phaser.Scene {
     this.heli.setCircle(26, 24, 14);
     this.heli.setCollideWorldBounds(true);
     this.heli.body.setAllowGravity(false);
-    this.physics.add.overlap(this.heli, this.ground, this.onHit, null, this);
+    this.groundCollider = this.physics.add.overlap(this.heli, this.ground, this.onHit, null, this);
   }
 
   createObstaclePool() {
@@ -576,26 +576,28 @@ export default class PlayScene extends Phaser.Scene {
     // 检查碰撞对象类型，只有障碍物和地面才扣血
     const colliderType = collider.getData('type');
     if (colliderType !== 'obstacle' && colliderType !== 'ground') {
-      return; // 不是障碍物，忽略
-    }
-    
-    // 如果是地面碰撞，重置直升机位置避免卡住
-    if (colliderType === 'ground') {
-      heli.setVelocityY(-300); // 给一个较大的向上速度
-      heli.y = DESIGN.height - 200; // 重置到更高的安全位置
+      return;
     }
     
     // 减少一条命
     this.lives -= 1;
-    this.livesLostCount += 1; // 记录失去的生命数（用于计算星级）
+    this.livesLostCount += 1;
     this.updateLivesDisplay();
     this.audio.playHit();
+    
+    // 触发无敌时间（闪烁）
+    this.triggerInvincible();
+    
+    // 如果是地面碰撞，给个向上的反弹力
+    if (colliderType === 'ground') {
+      heli.setVelocityY(-250);
+    }
     
     if (this.lives <= 0) {
       // 生命值归零，游戏结束
       this.isDead = true;
       this.hold = false;
-      heli.setVelocity(0, 0); // 停止移动
+      heli.setVelocity(0, 0);
       this.time.delayedCall(600, () => {
         this.scene.launch('UI', {
           mode: 'result',
@@ -604,17 +606,10 @@ export default class PlayScene extends Phaser.Scene {
           chapter: this.levelContext.chapter,
           level: this.levelContext.level,
           onRestart: () => this.restartCurrentLevel(),
-          onRevive: () => this.revivePlayer()  // 复活回调
+          onRevive: () => this.revivePlayer()
         });
         this.scene.pause();
       });
-    } else {
-      // 还有生命值，触发无敌时间并继续游戏
-      this.triggerInvincible();
-      // 确保游戏继续运行
-      if (!this.isRunning) {
-        this.isRunning = true;
-      }
     }
   };
 
@@ -628,18 +623,23 @@ export default class PlayScene extends Phaser.Scene {
   }
 
   triggerInvincible() {
+    if (this.isInvincible) return; // 已经在无敌时间内，不重复触发
+    
     this.isInvincible = true;
     this.invincibleTimer = 2.0; // 2秒无敌时间
     
-    // 闪烁效果
+    // 闪烁效果（2秒）
     this.tweens.add({
       targets: this.heli,
       alpha: 0.3,
       duration: 150,
       yoyo: true,
-      repeat: 13,
+      repeat: 13, // 13次重复 = 约2秒
       onComplete: () => {
         this.heli.alpha = 1;
+        // 闪烁结束时确保无敌时间也结束
+        this.isInvincible = false;
+        this.invincibleTimer = 0;
       }
     });
   }
