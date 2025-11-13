@@ -138,6 +138,7 @@ export default class PlayScene extends Phaser.Scene {
 
   createHelicopter() {
     this.heli = this.physics.add.image(180, this.centerY, 'heli');
+    this.heli.setFlipX(true); // 水平翻转直升机，使其朝向正确
     this.heli.setCircle(26, 24, 14);
     // 改为手动边界控制，避免 Arcade 世界边界内部强制归零造成卡底
     this.heli.setCollideWorldBounds(false);
