@@ -1,5 +1,6 @@
 import { CHAPTERS, WEATHER } from '../constants.js';
 import AudioSystem from '../systems/AudioSystem.js';
+import ProgressManager from '../systems/ProgressManager.js';
 
 export default class LevelScene extends Phaser.Scene {
   constructor() {
@@ -8,6 +9,7 @@ export default class LevelScene extends Phaser.Scene {
     this.audio = null;
     this.levelCards = [];
     this.chapterTabs = [];
+    this.progressManager = null;
   }
 
   init(data) {
@@ -20,6 +22,7 @@ export default class LevelScene extends Phaser.Scene {
     const cy = c.centerY;
 
     this.audio = new AudioSystem(this);
+    this.progressManager = new ProgressManager(this);
 
     this.add.rectangle(cx, cy, this.scale.width * 0.82, this.scale.height * 0.82, 0x101731, 0.6)
       .setStrokeStyle(2, 0x1f2d4c, 0.5);
@@ -36,8 +39,8 @@ export default class LevelScene extends Phaser.Scene {
       color: '#bcd7ff'
     }).setOrigin(0.5);
 
-  this.createChapterTabs(cx, cy - 190);
-  this.updateChapterTabsHighlight();
+    this.createChapterTabs(cx, cy - 190);
+    this.updateChapterTabsHighlight();
     this.levelGroup = this.add.container(0, 0);
     this.renderLevels();
 
@@ -235,16 +238,9 @@ export default class LevelScene extends Phaser.Scene {
   }
 
   getLevelProgress(chapterId) {
-    const progressKey = 'HELI_PROGRESS';
-    try {
-      const saved = localStorage.getItem(progressKey);
-      if (saved) {
-        const progress = JSON.parse(saved);
-        return progress[chapterId] || { unlockedLevels: 0 };
-      }
-    } catch (e) {
-      console.error('读取进度失败', e);
+    if (!this.progressManager) {
+      this.progressManager = new ProgressManager(this);
     }
-    return { unlockedLevels: 0 };
+    return this.progressManager.getChapterProgress(chapterId);
   }
 }

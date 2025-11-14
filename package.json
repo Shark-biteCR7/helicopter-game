@@ -1,13 +1,15 @@
 {
-  "name": "helicopter-escape-test",
-  "version": "1.0.0",
-  "description": "自动化测试脚本",
+  "name": "helicopter-escape",
+  "version": "1.1.0",
+  "private": true,
   "scripts": {
-    "test": "node test-game.js",
-    "serve": "python3 -m http.server 8080"
+    "dev": "python3 -m http.server 8080",
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/preview.mjs",
+    "test": "node test-game.js"
   },
   "devDependencies": {
-    "puppeteer": "^21.0.0",
-    "serve-handler": "^6.1.5"
+    "esbuild": "^0.24.0",
+    "puppeteer": "^24.30.0"
   }
 }
